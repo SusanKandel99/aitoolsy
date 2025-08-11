@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 245 58% 51%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -26,7 +26,7 @@ All colors MUST be HSL.
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 217 91% 60%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -34,25 +34,26 @@ All colors MUST be HSL.
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 245 58% 51%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Custom design tokens for aitoolsy */
+    --gradient-primary: linear-gradient(135deg, hsl(245 58% 51%), hsl(217 91% 60%));
+    --gradient-secondary: linear-gradient(135deg, hsl(210 40% 96.1%), hsl(214.3 31.8% 91.4%));
+    --shadow-soft: 0 4px 6px -1px hsl(245 58% 51% / 0.05), 0 2px 4px -2px hsl(245 58% 51% / 0.03);
+    --shadow-medium: 0 10px 15px -3px hsl(245 58% 51% / 0.1), 0 4px 6px -4px hsl(245 58% 51% / 0.05);
+    --shadow-large: 0 25px 50px -12px hsl(245 58% 51% / 0.15);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
+    --sidebar-background: 251 91% 95%;
     --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-primary: 245 58% 51%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 245 58% 95%;
+    --sidebar-accent-foreground: 245 58% 11%;
+    --sidebar-border: 245 32% 91%;
+    --sidebar-ring: 245 58% 51%;
   }
 
   .dark {
