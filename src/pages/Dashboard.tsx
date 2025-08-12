@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ interface Note {
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -175,7 +176,7 @@ export default function Dashboard() {
               </Button>
             </div>
             
-            <Button onClick={handleCreateNote} className="bg-gradient-to-r from-primary to-accent">
+            <Button onClick={() => navigate('/editor')} className="bg-gradient-to-r from-primary to-accent">
               <Plus className="w-4 h-4 mr-2" />
               New Note
             </Button>
@@ -208,7 +209,7 @@ export default function Dashboard() {
                 }
               </p>
               {!searchQuery && (
-                <Button onClick={handleCreateNote} className="bg-gradient-to-r from-primary to-accent">
+                <Button onClick={() => navigate('/editor')} className="bg-gradient-to-r from-primary to-accent">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Note
                 </Button>
@@ -229,10 +230,7 @@ export default function Dashboard() {
                 content={note.content}
                 isStarred={note.is_starred}
                 updatedAt={note.updated_at}
-                onClick={() => {
-                  // TODO: Navigate to note editor
-                  console.log('Edit note:', note.id);
-                }}
+                onClick={() => navigate(`/editor/${note.id}`)}
                 onToggleStar={() => handleToggleStar(note.id, note.is_starred)}
               />
             ))}

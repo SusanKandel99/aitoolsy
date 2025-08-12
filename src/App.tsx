@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AppSidebar } from "@/components/AppSidebar";
 import Dashboard from "./pages/Dashboard";
+import NoteEditor from "./pages/NoteEditor";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +34,8 @@ const App = () => (
                       </header>
                       <Routes>
                         <Route path="/" element={<Dashboard />} />
+                        <Route path="/editor/:noteId" element={<NoteEditor />} />
+                        <Route path="/editor" element={<NoteEditor />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </div>
