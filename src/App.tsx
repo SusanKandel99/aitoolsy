@@ -10,6 +10,10 @@ import Dashboard from "./pages/Dashboard";
 import NoteEditor from "./pages/NoteEditor";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Search from "./pages/Search";
+import Starred from "./pages/Starred";
+import AIAssistant from "./pages/AIAssistant";
+import Flashcards from "./pages/Flashcards";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +40,10 @@ const App = () => (
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/editor/:noteId" element={<NoteEditor />} />
                         <Route path="/editor" element={<NoteEditor />} />
+                        <Route path="/search" element={<Search />} />
+                        <Route path="/starred" element={<Starred />} />
+                        <Route path="/ai-assistant" element={<AIAssistant />} />
+                        <Route path="/flashcards" element={<Flashcards />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </div>

@@ -41,6 +41,7 @@ export default function NoteEditor() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (noteId && user) {
@@ -58,11 +59,33 @@ export default function NoteEditor() {
       const titleChanged = title !== note.title;
       const contentChanged = content !== note.content;
       setHasUnsavedChanges(titleChanged || contentChanged);
-    } else if (noteId) {
+      
+      // Auto-save after changes
+      if (titleChanged || contentChanged) {
+        if (autoSaveTimeout) {
+          clearTimeout(autoSaveTimeout);
+        }
+        
+        const timeout = setTimeout(() => {
+          autoSave();
+        }, 2000); // Auto-save after 2 seconds of inactivity
+        
+        setAutoSaveTimeout(timeout);
+      }
+    } else if (!noteId) {
       // New note with content
       setHasUnsavedChanges(title.trim() !== '' || content.trim() !== '');
     }
-  }, [title, content, note, noteId]);
+  }, [title, content, note]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+    };
+  }, [autoSaveTimeout]);
 
   const fetchNote = async () => {
     try {
@@ -78,7 +101,7 @@ export default function NoteEditor() {
           description: error.message,
           variant: "destructive",
         });
-        navigate('/dashboard');
+        navigate('/');
         return;
       }
 
@@ -92,9 +115,39 @@ export default function NoteEditor() {
         description: "Failed to load the note. Please try again.",
         variant: "destructive",
       });
-      navigate('/dashboard');
+      navigate('/');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const autoSave = async () => {
+    if (!user || isSaving || !hasUnsavedChanges) return;
+    
+    try {
+      if (noteId && note) {
+        // Auto-save existing note
+        await (supabase as any)
+          .from('notes')
+          .update({ 
+            title: title.trim() || 'Untitled', 
+            content,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', noteId);
+
+        // Update local state
+        setNote({
+          ...note,
+          title: title.trim() || 'Untitled',
+          content,
+          updated_at: new Date().toISOString()
+        });
+        
+        setHasUnsavedChanges(false);
+      }
+    } catch (error) {
+      console.error('Auto-save failed:', error);
     }
   };
 
@@ -204,7 +257,7 @@ export default function NoteEditor() {
         title: "Note deleted",
         description: "The note has been permanently deleted.",
       });
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
       console.error('Error deleting note:', error);
       toast({
@@ -235,7 +288,7 @@ export default function NoteEditor() {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/')}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back

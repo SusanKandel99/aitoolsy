@@ -61,14 +61,12 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full justify-start mb-2 border-dashed"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {!collapsed && 'New Note'}
-                </Button>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/editor" className="border-dashed border">
+                    <Plus className="w-4 h-4" />
+                    {!collapsed && <span>New Note</span>}
+                  </NavLink>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
