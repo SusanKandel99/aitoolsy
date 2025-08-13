@@ -31,3 +31,6 @@ major_version = 15
 
 [functions.ai-assist]
 verify_jwt = false
+
+[functions.generate-flashcards]
+verify_jwt = false

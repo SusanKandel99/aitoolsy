@@ -1,51 +1,108 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Sparkles, RotateCcw, Plus, Play } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { FlashcardGenerator } from '@/components/FlashcardGenerator';
+import { FlashcardViewer } from '@/components/FlashcardViewer';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, BookOpen } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Navigate } from 'react-router-dom';
+
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+}
 
 interface Flashcard {
   id: string;
-  front: string;
-  back: string;
+  question: string;
+  answer: string;
+  difficulty: string;
+  note_id: string;
+  created_at: string;
 }
 
 export default function Flashcards() {
   const { user, loading } = useAuth();
-  const [flashcards, setFlashcards] = useState<Flashcard[]>([
-    {
-      id: '1',
-      front: 'What is the capital of France?',
-      back: 'Paris'
-    },
-    {
-      id: '2',
-      front: 'What is 2 + 2?',
-      back: '4'
-    },
-    {
-      id: '3',
-      front: 'Who wrote Romeo and Juliet?',
-      back: 'William Shakespeare'
+  const { toast } = useToast();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
     }
-  ]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [studyMode, setStudyMode] = useState(false);
+  }, [user]);
 
-  const nextCard = () => {
-    setIsFlipped(false);
-    setCurrentIndex((prev) => (prev + 1) % flashcards.length);
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch notes
+      const { data: notesData, error: notesError } = await supabase
+        .from('notes')
+        .select('id, title, content')
+        .order('updated_at', { ascending: false });
+
+      if (notesError) {
+        throw new Error(`Failed to fetch notes: ${notesError.message}`);
+      }
+
+      // Fetch flashcards
+      const { data: flashcardsData, error: flashcardsError } = await supabase
+        .from('flashcards')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (flashcardsError) {
+        throw new Error(`Failed to fetch flashcards: ${flashcardsError.message}`);
+      }
+
+      setNotes(notesData || []);
+      setFlashcards(flashcardsData || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error loading data",
+        description: error instanceof Error ? error.message : "Failed to load flashcards and notes.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const prevCard = () => {
-    setIsFlipped(false);
-    setCurrentIndex((prev) => (prev - 1 + flashcards.length) % flashcards.length);
+  const handleFlashcardsGenerated = () => {
+    fetchData();
   };
 
-  const flipCard = () => {
-    setIsFlipped(!isFlipped);
+  const handleClearAllFlashcards = async () => {
+    try {
+      const { error } = await supabase
+        .from('flashcards')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (error) {
+        throw new Error(`Failed to clear flashcards: ${error.message}`);
+      }
+
+      setFlashcards([]);
+      toast({
+        title: "Flashcards cleared",
+        description: "All flashcards have been deleted.",
+      });
+    } catch (error) {
+      console.error('Error clearing flashcards:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to clear flashcards.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -63,134 +120,59 @@ export default function Flashcards() {
     return <Navigate to="/auth" replace />;
   }
 
-  return (
-    <div className="flex-1 flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
-        <div className="flex items-center justify-between p-6">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Sparkles className="w-6 h-6" />
-              Flashcards
-            </h1>
-            <p className="text-muted-foreground">
-              Study with interactive flashcards
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <Button
-              variant={studyMode ? 'default' : 'outline'}
-              onClick={() => setStudyMode(!studyMode)}
-            >
-              <Play className="w-4 h-4 mr-2" />
-              {studyMode ? 'Exit Study Mode' : 'Study Mode'}
-            </Button>
-            <Button variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Card
-            </Button>
-          </div>
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading flashcards...</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Content */}
-      <div className="flex-1 p-6">
-        {flashcards.length === 0 ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No flashcards yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Create your first flashcard to start studying
-              </p>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Flashcard
-              </Button>
-            </div>
+  return (
+    <div className="flex-1 p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <BookOpen className="w-8 h-8" />
+              Flashcards
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Generate AI-powered flashcards from your notes and study efficiently
+            </p>
           </div>
-        ) : (
-          <div className="max-w-2xl mx-auto">
-            {/* Progress */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-                <span>Card {currentIndex + 1} of {flashcards.length}</span>
-                <span>{Math.round(((currentIndex + 1) / flashcards.length) * 100)}% complete</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentIndex + 1) / flashcards.length) * 100}%` }}
-                />
-              </div>
-            </div>
+          {flashcards.length > 0 && (
+            <Button variant="destructive" onClick={handleClearAllFlashcards}>
+              Clear All
+            </Button>
+          )}
+        </div>
 
-            {/* Flashcard */}
-            <div className="relative mb-6">
-              <Card 
-                className="w-full h-80 cursor-pointer transition-transform hover:scale-105 perspective-1000"
-                onClick={flipCard}
-              >
-                <CardContent className="flex items-center justify-center h-full p-8">
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-4">
-                      {isFlipped ? 'Answer' : 'Question'}
-                    </div>
-                    <div className="text-xl font-medium">
-                      {isFlipped ? flashcards[currentIndex].back : flashcards[currentIndex].front}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-4">
-                      Click to {isFlipped ? 'see question' : 'reveal answer'}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex items-center justify-center gap-4">
-              <Button 
-                variant="outline"
-                onClick={prevCard}
-                disabled={flashcards.length <= 1}
-              >
-                Previous
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={flipCard}
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Flip Card
-              </Button>
-              
-              <Button 
-                onClick={nextCard}
-                disabled={flashcards.length <= 1}
-              >
-                Next
-              </Button>
-            </div>
-
-            {studyMode && (
-              <div className="mt-6 flex items-center justify-center gap-4">
-                <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
-                  Hard
-                </Button>
-                <Button variant="outline" className="text-yellow-600 border-yellow-200 hover:bg-yellow-50">
-                  Medium
-                </Button>
-                <Button variant="outline" className="text-green-600 border-green-200 hover:bg-green-50">
-                  Easy
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+        <Tabs defaultValue="generate" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="generate">Generate Flashcards</TabsTrigger>
+            <TabsTrigger value="study" disabled={flashcards.length === 0}>
+              Study ({flashcards.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="generate" className="space-y-4">
+            <FlashcardGenerator 
+              notes={notes} 
+              onFlashcardsGenerated={handleFlashcardsGenerated}
+            />
+          </TabsContent>
+          
+          <TabsContent value="study" className="space-y-4">
+            <FlashcardViewer 
+              flashcards={flashcards} 
+              notes={notes}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
