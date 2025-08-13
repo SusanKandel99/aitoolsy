@@ -64,7 +64,7 @@ serve(async (req) => {
         'X-Title': 'AIToolsy Note Editor'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-exp:free',
+        model: 'google/gemini-flash-1.5',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
