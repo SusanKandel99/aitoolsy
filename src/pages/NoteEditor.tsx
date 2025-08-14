@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Save, Star, StarOff, Trash2, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { TagManager } from '@/components/TagManager';
+import { FolderSelector } from '@/components/FolderSelector';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +27,8 @@ interface Note {
   title: string;
   content: string;
   is_starred: boolean;
+  folder_id: string | null;
+  tags: string[];
   created_at: string;
   updated_at: string;
 }
@@ -38,6 +42,8 @@ export default function NoteEditor() {
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [folderId, setFolderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -51,6 +57,8 @@ export default function NoteEditor() {
       setIsLoading(false);
       setTitle('Untitled');
       setContent('');
+      setTags([]);
+      setFolderId(null);
     }
   }, [noteId, user]);
 
@@ -58,10 +66,12 @@ export default function NoteEditor() {
     if (note) {
       const titleChanged = title !== note.title;
       const contentChanged = content !== note.content;
-      setHasUnsavedChanges(titleChanged || contentChanged);
+      const tagsChanged = JSON.stringify(tags) !== JSON.stringify(note.tags || []);
+      const folderChanged = folderId !== note.folder_id;
+      setHasUnsavedChanges(titleChanged || contentChanged || tagsChanged || folderChanged);
       
       // Auto-save after changes
-      if (titleChanged || contentChanged) {
+      if (titleChanged || contentChanged || tagsChanged || folderChanged) {
         if (autoSaveTimeout) {
           clearTimeout(autoSaveTimeout);
         }
@@ -74,9 +84,9 @@ export default function NoteEditor() {
       }
     } else if (!noteId) {
       // New note with content
-      setHasUnsavedChanges(title.trim() !== '' || content.trim() !== '');
+      setHasUnsavedChanges(title.trim() !== '' || content.trim() !== '' || tags.length > 0 || folderId !== null);
     }
-  }, [title, content, note]);
+  }, [title, content, tags, folderId, note]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -108,6 +118,8 @@ export default function NoteEditor() {
       setNote(data);
       setTitle(data.title);
       setContent(data.content || '');
+      setTags(data.tags || []);
+      setFolderId(data.folder_id);
     } catch (error) {
       console.error('Error fetching note:', error);
       toast({
@@ -132,15 +144,18 @@ export default function NoteEditor() {
           .update({ 
             title: title.trim() || 'Untitled', 
             content,
+            tags,
+            folder_id: folderId,
             updated_at: new Date().toISOString()
           })
           .eq('id', noteId);
 
-        // Update local state
         setNote({
           ...note,
           title: title.trim() || 'Untitled',
           content,
+          tags,
+          folder_id: folderId,
           updated_at: new Date().toISOString()
         });
         
@@ -158,35 +173,36 @@ export default function NoteEditor() {
 
     try {
       if (noteId) {
-        // Update existing note
         const { error } = await (supabase as any)
           .from('notes')
           .update({ 
             title: title.trim() || 'Untitled', 
             content,
+            tags,
+            folder_id: folderId,
             updated_at: new Date().toISOString()
           })
           .eq('id', noteId);
 
         if (error) throw error;
 
-        // Update local state
-        if (note) {
           setNote({
             ...note,
             title: title.trim() || 'Untitled',
             content,
+            tags,
+            folder_id: folderId,
             updated_at: new Date().toISOString()
           });
-        }
       } else {
-        // Create new note
         const { data, error } = await (supabase as any)
           .from('notes')
           .insert([{
             user_id: user.id,
             title: title.trim() || 'Untitled',
             content,
+            tags,
+            folder_id: folderId,
           }])
           .select()
           .single();
@@ -366,6 +382,18 @@ export default function NoteEditor() {
             placeholder="Note title..."
             className="text-2xl font-bold border-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
           />
+
+          {/* Folder and Tags */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FolderSelector
+              selectedFolderId={folderId}
+              onFolderChange={setFolderId}
+            />
+            <TagManager
+              tags={tags}
+              onTagsChange={setTags}
+            />
+          </div>
 
           {/* Rich Text Editor */}
           <RichTextEditor

@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
@@ -55,12 +55,41 @@ export type Database = {
           },
         ]
       }
+      folders: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           content: string | null
           created_at: string
+          folder_id: string | null
           id: string
           is_starred: boolean
+          tags: string[] | null
           title: string
           updated_at: string
           user_id: string
@@ -68,8 +97,10 @@ export type Database = {
         Insert: {
           content?: string | null
           created_at?: string
+          folder_id?: string | null
           id?: string
           is_starred?: boolean
+          tags?: string[] | null
           title?: string
           updated_at?: string
           user_id: string
@@ -77,13 +108,23 @@ export type Database = {
         Update: {
           content?: string | null
           created_at?: string
+          folder_id?: string | null
           id?: string
           is_starred?: boolean
+          tags?: string[] | null
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notes_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
