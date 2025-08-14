@@ -57,6 +57,7 @@ export function AppSidebar() {
   useEffect(() => {
     if (user) {
       fetchFoldersAndNotes();
+      setupRealTimeSubscriptions();
     }
   }, [user]);
 
@@ -86,6 +87,91 @@ export function AppSidebar() {
     } catch (error) {
       console.error('Error fetching folders and notes:', error);
     }
+  };
+
+  const setupRealTimeSubscriptions = () => {
+    // Notes real-time subscription
+    const notesChannel = supabase
+      .channel('sidebar-notes-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notes'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newNote = payload.new as Note;
+            setNotes(prev => [newNote, ...prev]);
+            // Update tags if note has tags
+            if (newNote.tags?.length) {
+              setAllTags(prev => {
+                const newTags = new Set([...prev, ...newNote.tags]);
+                return Array.from(newTags).sort();
+              });
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedNote = payload.new as Note;
+            setNotes(prev => prev.map(note => 
+              note.id === updatedNote.id ? updatedNote : note
+            ));
+            // Recalculate tags
+            setNotes(currentNotes => {
+              const updated = currentNotes.map(note => 
+                note.id === updatedNote.id ? updatedNote : note
+              );
+              const tagsSet = new Set<string>();
+              updated.forEach(note => {
+                (note.tags || []).forEach(tag => tagsSet.add(tag));
+              });
+              setAllTags(Array.from(tagsSet).sort());
+              return updated;
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setNotes(prev => {
+              const filtered = prev.filter(note => note.id !== payload.old.id);
+              // Recalculate tags
+              const tagsSet = new Set<string>();
+              filtered.forEach(note => {
+                (note.tags || []).forEach(tag => tagsSet.add(tag));
+              });
+              setAllTags(Array.from(tagsSet).sort());
+              return filtered;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Folders real-time subscription
+    const foldersChannel = supabase
+      .channel('sidebar-folders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'folders'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setFolders(prev => [...prev, payload.new as Folder].sort((a, b) => a.name.localeCompare(b.name)));
+          } else if (payload.eventType === 'UPDATE') {
+            setFolders(prev => prev.map(folder => 
+              folder.id === payload.new.id ? payload.new as Folder : folder
+            ).sort((a, b) => a.name.localeCompare(b.name)));
+          } else if (payload.eventType === 'DELETE') {
+            setFolders(prev => prev.filter(folder => folder.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(notesChannel);
+      supabase.removeChannel(foldersChannel);
+    };
   };
 
   const isActive = (path: string) => currentPath === path;
@@ -173,21 +259,26 @@ export function AppSidebar() {
                   const folderNotes = getNotesInFolder(folder.id);
                   return (
                     <SidebarMenuItem key={folder.id}>
-                      <div className="flex items-center justify-between w-full p-2 rounded-md hover:bg-sidebar-accent/50">
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: folder.color }}
-                          />
-                          <FolderOpen className="w-4 h-4" />
-                          <span className="truncate text-sm">{folder.name}</span>
-                        </div>
-                        {folderNotes.length > 0 && (
-                          <Badge variant="secondary" className="text-xs h-5">
-                            {folderNotes.length}
-                          </Badge>
-                        )}
-                      </div>
+                      <SidebarMenuButton asChild>
+                        <NavLink 
+                          to={`/?folder=${folder.id}`} 
+                          className="flex items-center justify-between w-full"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: folder.color }}
+                            />
+                            <FolderOpen className="w-4 h-4" />
+                            <span className="truncate text-sm">{folder.name}</span>
+                          </div>
+                          {folderNotes.length > 0 && (
+                            <Badge variant="secondary" className="text-xs h-5">
+                              {folderNotes.length}
+                            </Badge>
+                          )}
+                        </NavLink>
+                      </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
                 })}
@@ -206,15 +297,20 @@ export function AppSidebar() {
                   const taggedNotes = getNotesWithTag(tag);
                   return (
                     <SidebarMenuItem key={tag}>
-                      <div className="flex items-center justify-between w-full p-2 rounded-md hover:bg-sidebar-accent/50">
-                        <div className="flex items-center gap-2">
-                          <Tag className="w-4 h-4" />
-                          <span className="truncate text-sm">{tag}</span>
-                        </div>
-                        <Badge variant="secondary" className="text-xs h-5">
-                          {taggedNotes.length}
-                        </Badge>
-                      </div>
+                      <SidebarMenuButton asChild>
+                        <NavLink 
+                          to={`/?tag=${tag}`} 
+                          className="flex items-center justify-between w-full"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Tag className="w-4 h-4" />
+                            <span className="truncate text-sm">{tag}</span>
+                          </div>
+                          <Badge variant="secondary" className="text-xs h-5">
+                            {taggedNotes.length}
+                          </Badge>
+                        </NavLink>
+                      </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
                 })}

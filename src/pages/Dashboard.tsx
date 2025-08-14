@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, LayoutGrid, List } from 'lucide-react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, Search, Filter, LayoutGrid, List, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { NoteCard } from '@/components/NoteCard';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,26 +16,41 @@ interface Note {
   is_starred: boolean;
   updated_at: string;
   created_at: string;
+  folder_id: string | null;
+  tags: string[];
+}
+
+interface Folder {
+  id: string;
+  name: string;
+  color: string;
 }
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loadingNotes, setLoadingNotes] = useState(true);
 
+  const selectedFolderId = searchParams.get('folder');
+  const selectedTag = searchParams.get('tag');
+
   useEffect(() => {
     if (user) {
       fetchNotes();
+      fetchFolders();
+      setupRealTimeSubscriptions();
     }
   }, [user]);
 
   const fetchNotes = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('notes')
         .select('*')
         .order('updated_at', { ascending: false });
@@ -55,11 +71,78 @@ export default function Dashboard() {
     }
   };
 
+  const fetchFolders = async () => {
+    try {
+      const { data } = await supabase
+        .from('folders')
+        .select('*')
+        .order('name');
+      setFolders(data || []);
+    } catch (error) {
+      console.error('Error fetching folders:', error);
+    }
+  };
+
+  const setupRealTimeSubscriptions = () => {
+    // Notes real-time subscription
+    const notesChannel = supabase
+      .channel('notes-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notes'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setNotes(prev => [payload.new as Note, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setNotes(prev => prev.map(note => 
+              note.id === payload.new.id ? payload.new as Note : note
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setNotes(prev => prev.filter(note => note.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    // Folders real-time subscription
+    const foldersChannel = supabase
+      .channel('folders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'folders'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setFolders(prev => [...prev, payload.new as Folder].sort((a, b) => a.name.localeCompare(b.name)));
+          } else if (payload.eventType === 'UPDATE') {
+            setFolders(prev => prev.map(folder => 
+              folder.id === payload.new.id ? payload.new as Folder : folder
+            ).sort((a, b) => a.name.localeCompare(b.name)));
+          } else if (payload.eventType === 'DELETE') {
+            setFolders(prev => prev.filter(folder => folder.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(notesChannel);
+      supabase.removeChannel(foldersChannel);
+    };
+  };
+
   const handleCreateNote = async () => {
     if (!user) return;
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('notes')
         .insert([
           {
@@ -78,11 +161,11 @@ export default function Dashboard() {
           variant: "destructive",
         });
       } else {
-        setNotes([data, ...notes]);
         toast({
           title: "Note created",
           description: "A new note has been created.",
         });
+        navigate(`/editor/${data.id}`);
       }
     } catch (error) {
       console.error('Error creating note:', error);
@@ -91,7 +174,7 @@ export default function Dashboard() {
 
   const handleToggleStar = async (noteId: string, currentStarred: boolean) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('notes')
         .update({ is_starred: !currentStarred })
         .eq('id', noteId);
@@ -102,22 +185,35 @@ export default function Dashboard() {
           description: error.message,
           variant: "destructive",
         });
-      } else {
-        setNotes(notes.map(note => 
-          note.id === noteId 
-            ? { ...note, is_starred: !currentStarred }
-            : note
-        ));
       }
     } catch (error) {
       console.error('Error toggling star:', error);
     }
   };
 
-  const filteredNotes = notes.filter(note => 
-    note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    note.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const clearFilter = () => {
+    setSearchParams({});
+  };
+
+  const getFilteredNotes = () => {
+    let filtered = notes.filter(note => 
+      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    if (selectedFolderId) {
+      filtered = filtered.filter(note => note.folder_id === selectedFolderId);
+    }
+
+    if (selectedTag) {
+      filtered = filtered.filter(note => note.tags?.includes(selectedTag));
+    }
+
+    return filtered;
+  };
+
+  const filteredNotes = getFilteredNotes();
+  const selectedFolder = selectedFolderId ? folders.find(f => f.id === selectedFolderId) : null;
 
   if (loading) {
     return (
@@ -142,8 +238,42 @@ export default function Dashboard() {
           <div>
             <h1 className="text-2xl font-bold">Your Notes</h1>
             <p className="text-muted-foreground">
-              {notes.length} {notes.length === 1 ? 'note' : 'notes'}
+              {filteredNotes.length} of {notes.length} {notes.length === 1 ? 'note' : 'notes'}
             </p>
+            {(selectedFolder || selectedTag) && (
+              <div className="flex items-center gap-2 mt-2">
+                {selectedFolder && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: selectedFolder.color }}
+                    />
+                    {selectedFolder.name}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilter}
+                      className="h-4 w-4 p-0 ml-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {selectedTag && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    #{selectedTag}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilter}
+                      className="h-4 w-4 p-0 ml-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="flex items-center gap-3">
