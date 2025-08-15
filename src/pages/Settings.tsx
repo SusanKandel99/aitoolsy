@@ -8,7 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Settings as SettingsIcon, Trash2, LogOut } from 'lucide-react';
+import { User, Mail, Settings as SettingsIcon, Trash2, LogOut, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +31,7 @@ export default function Settings() {
   const [autoSaveInterval, setAutoSaveInterval] = useState('1000');
   const [confirmDelete, setConfirmDelete] = useState(true);
   const [showPreview, setShowPreview] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     // Load preferences from localStorage
@@ -48,6 +50,17 @@ export default function Settings() {
   }, []);
 
   const savePreferences = () => {
+    // Validate auto-save interval
+    const interval = parseInt(autoSaveInterval);
+    if (isNaN(interval) || interval < 500 || interval > 10000) {
+      toast({
+        title: "Invalid auto-save interval",
+        description: "Auto-save interval must be between 500 and 10000 milliseconds.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const preferences = {
       autoSaveEnabled,
       autoSaveInterval,
@@ -56,6 +69,10 @@ export default function Settings() {
     };
     
     localStorage.setItem('app-preferences', JSON.stringify(preferences));
+    
+    // Dispatch custom event to notify other components about preference changes
+    window.dispatchEvent(new CustomEvent('preferences-updated', { detail: preferences }));
+    
     toast({
       title: "Preferences saved",
       description: "Your settings have been updated successfully.",
@@ -64,17 +81,73 @@ export default function Settings() {
 
   const handleSignOut = async () => {
     try {
+      // Clean up any stored preferences if needed
       await signOut();
       toast({
         title: "Signed out",
         description: "You have been signed out successfully.",
       });
     } catch (error) {
+      console.error('Sign out error:', error);
       toast({
         title: "Error",
         description: "Failed to sign out. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    
+    setIsDeleting(true);
+    try {
+      // Delete all user data first
+      const { error: notesError } = await supabase
+        .from('notes')
+        .delete()
+        .eq('user_id', user.id);
+
+      const { error: foldersError } = await supabase
+        .from('folders')
+        .delete()
+        .eq('user_id', user.id);
+
+      const { error: flashcardsError } = await supabase
+        .from('flashcards')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (notesError || foldersError || flashcardsError) {
+        throw new Error('Failed to delete user data');
+      }
+
+      // Clear local storage
+      localStorage.clear();
+      
+      // Delete the user account
+      const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+      
+      if (authError) {
+        throw authError;
+      }
+
+      toast({
+        title: "Account deleted",
+        description: "Your account and all data have been permanently deleted.",
+      });
+
+      // Sign out and redirect
+      await signOut();
+    } catch (error) {
+      console.error('Delete account error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please contact support if this issue persists.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -164,7 +237,18 @@ export default function Settings() {
               </div>
               <Switch
                 checked={autoSaveEnabled}
-                onCheckedChange={setAutoSaveEnabled}
+                onCheckedChange={(checked) => {
+                  setAutoSaveEnabled(checked);
+                  // Auto-save this preference immediately
+                  const newPrefs = {
+                    autoSaveEnabled: checked,
+                    autoSaveInterval,
+                    confirmDelete,
+                    showPreview,
+                  };
+                  localStorage.setItem('app-preferences', JSON.stringify(newPrefs));
+                  window.dispatchEvent(new CustomEvent('preferences-updated', { detail: newPrefs }));
+                }}
               />
             </div>
 
@@ -198,7 +282,17 @@ export default function Settings() {
               </div>
               <Switch
                 checked={confirmDelete}
-                onCheckedChange={setConfirmDelete}
+                onCheckedChange={(checked) => {
+                  setConfirmDelete(checked);
+                  const newPrefs = {
+                    autoSaveEnabled,
+                    autoSaveInterval,
+                    confirmDelete: checked,
+                    showPreview,
+                  };
+                  localStorage.setItem('app-preferences', JSON.stringify(newPrefs));
+                  window.dispatchEvent(new CustomEvent('preferences-updated', { detail: newPrefs }));
+                }}
               />
             </div>
 
@@ -211,7 +305,17 @@ export default function Settings() {
               </div>
               <Switch
                 checked={showPreview}
-                onCheckedChange={setShowPreview}
+                onCheckedChange={(checked) => {
+                  setShowPreview(checked);
+                  const newPrefs = {
+                    autoSaveEnabled,
+                    autoSaveInterval,
+                    confirmDelete,
+                    showPreview: checked,
+                  };
+                  localStorage.setItem('app-preferences', JSON.stringify(newPrefs));
+                  window.dispatchEvent(new CustomEvent('preferences-updated', { detail: newPrefs }));
+                }}
               />
             </div>
 
@@ -259,9 +363,20 @@ export default function Settings() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
-                      I understand, delete my account
+                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      className="bg-destructive hover:bg-destructive/90"
+                      onClick={handleDeleteAccount}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Deleting...
+                        </>
+                      ) : (
+                        'I understand, delete my account'
+                      )}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

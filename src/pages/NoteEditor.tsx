@@ -48,6 +48,36 @@ export default function NoteEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [preferences, setPreferences] = useState({
+    autoSaveEnabled: true,
+    autoSaveInterval: '1000',
+    confirmDelete: true,
+    showPreview: true,
+  });
+
+  useEffect(() => {
+    // Load preferences from localStorage
+    const savedPrefs = localStorage.getItem('app-preferences');
+    if (savedPrefs) {
+      try {
+        const prefs = JSON.parse(savedPrefs);
+        setPreferences(prefs);
+      } catch (error) {
+        console.error('Failed to load preferences:', error);
+      }
+    }
+
+    // Listen for preference updates
+    const handlePreferencesUpdate = (event: CustomEvent) => {
+      setPreferences(event.detail);
+    };
+
+    window.addEventListener('preferences-updated', handlePreferencesUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('preferences-updated', handlePreferencesUpdate as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     if (noteId && user) {
@@ -70,36 +100,38 @@ export default function NoteEditor() {
       const folderChanged = folderId !== note.folder_id;
       setHasUnsavedChanges(titleChanged || contentChanged || tagsChanged || folderChanged);
       
-      // Auto-save after changes
-      if (titleChanged || contentChanged || tagsChanged || folderChanged) {
+      // Auto-save after changes (only if enabled in preferences)
+      if (preferences.autoSaveEnabled && (titleChanged || contentChanged || tagsChanged || folderChanged)) {
         if (autoSaveTimeout) {
           clearTimeout(autoSaveTimeout);
         }
         
+        const interval = parseInt(preferences.autoSaveInterval) || 1000;
         const timeout = setTimeout(() => {
           autoSave();
-        }, 1000); // Auto-save after 1 second of inactivity
+        }, interval);
         
         setAutoSaveTimeout(timeout);
       }
     } else if (!noteId) {
-      // Auto-save new notes with content
+      // Auto-save new notes with content (only if enabled in preferences)
       const hasContent = title.trim() !== '' || content.trim() !== '' || tags.length > 0 || folderId !== null;
       setHasUnsavedChanges(hasContent);
       
-      if (hasContent) {
+      if (preferences.autoSaveEnabled && hasContent) {
         if (autoSaveTimeout) {
           clearTimeout(autoSaveTimeout);
         }
         
+        const interval = parseInt(preferences.autoSaveInterval) || 2000;
         const timeout = setTimeout(() => {
           autoSaveNewNote();
-        }, 2000); // Auto-save new note after 2 seconds
+        }, interval);
         
         setAutoSaveTimeout(timeout);
       }
     }
-  }, [title, content, tags, folderId, note]);
+  }, [title, content, tags, folderId, note, preferences]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -358,43 +390,54 @@ export default function NoteEditor() {
           </div>
 
           <div className="flex items-center gap-2">
-            {note && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleStar}
-                >
-                  {note.is_starred ? (
-                    <Star className="w-4 h-4 fill-current text-yellow-500" />
-                  ) : (
-                    <StarOff className="w-4 h-4" />
-                  )}
-                </Button>
-
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Trash2 className="w-4 h-4" />
+                {note && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleStar}
+                    >
+                      {note.is_starred ? (
+                        <Star className="w-4 h-4 fill-current text-yellow-500" />
+                      ) : (
+                        <StarOff className="w-4 h-4" />
+                      )}
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Note</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this note? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={deleteNote} className="bg-destructive hover:bg-destructive/90">
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </>
-            )}
+
+                    {preferences.confirmDelete ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Note</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this note? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={deleteNote} className="bg-destructive hover:bg-destructive/90">
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={deleteNote}
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </>
+                )}
 
             <Button 
               onClick={saveNote}
