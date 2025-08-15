@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, X, Tag } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TagManagerProps {
   tags: string[];
@@ -14,6 +16,33 @@ interface TagManagerProps {
 export function TagManager({ tags, onTagsChange }: TagManagerProps) {
   const [newTag, setNewTag] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [previousTags, setPreviousTags] = useState<string[]>([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchPreviousTags();
+    }
+  }, [user]);
+
+  const fetchPreviousTags = async () => {
+    try {
+      const { data } = await supabase
+        .from('notes')
+        .select('tags')
+        .not('tags', 'is', null);
+
+      if (data) {
+        const allTags = new Set<string>();
+        data.forEach(note => {
+          (note.tags || []).forEach((tag: string) => allTags.add(tag));
+        });
+        setPreviousTags(Array.from(allTags).sort());
+      }
+    } catch (error) {
+      console.error('Error fetching previous tags:', error);
+    }
+  };
 
   const addTag = () => {
     const trimmedTag = newTag.trim();
@@ -77,6 +106,31 @@ export function TagManager({ tags, onTagsChange }: TagManagerProps) {
                   autoFocus
                 />
               </div>
+              
+              {previousTags.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Previously used tags</Label>
+                  <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                    {previousTags
+                      .filter(tag => !tags.includes(tag))
+                      .map((tag) => (
+                        <Button
+                          key={tag}
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs"
+                          onClick={() => {
+                            onTagsChange([...tags, tag]);
+                            setIsOpen(false);
+                          }}
+                        >
+                          {tag}
+                        </Button>
+                      ))}
+                  </div>
+                </div>
+              )}
+              
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsOpen(false)}>
                   Cancel

@@ -250,12 +250,12 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Dynamic Folders */}
-        {!collapsed && folders.length > 0 && (
+        {!collapsed && (
           <SidebarGroup>
             <SidebarGroupLabel>Folders</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {folders.map((folder) => {
+                {folders.filter(folder => getNotesInFolder(folder.id).length > 0).map((folder) => {
                   const folderNotes = getNotesInFolder(folder.id);
                   return (
                     <SidebarMenuItem key={folder.id}>
@@ -272,11 +272,9 @@ export function AppSidebar() {
                             <FolderOpen className="w-4 h-4" />
                             <span className="truncate text-sm">{folder.name}</span>
                           </div>
-                          {folderNotes.length > 0 && (
-                            <Badge variant="secondary" className="text-xs h-5">
-                              {folderNotes.length}
-                            </Badge>
-                          )}
+                          <Badge variant="secondary" className="text-xs h-5">
+                            {folderNotes.length}
+                          </Badge>
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -78,13 +78,26 @@ export default function NoteEditor() {
         
         const timeout = setTimeout(() => {
           autoSave();
-        }, 2000); // Auto-save after 2 seconds of inactivity
+        }, 1000); // Auto-save after 1 second of inactivity
         
         setAutoSaveTimeout(timeout);
       }
     } else if (!noteId) {
-      // New note with content
-      setHasUnsavedChanges(title.trim() !== '' || content.trim() !== '' || tags.length > 0 || folderId !== null);
+      // Auto-save new notes with content
+      const hasContent = title.trim() !== '' || content.trim() !== '' || tags.length > 0 || folderId !== null;
+      setHasUnsavedChanges(hasContent);
+      
+      if (hasContent) {
+        if (autoSaveTimeout) {
+          clearTimeout(autoSaveTimeout);
+        }
+        
+        const timeout = setTimeout(() => {
+          autoSaveNewNote();
+        }, 2000); // Auto-save new note after 2 seconds
+        
+        setAutoSaveTimeout(timeout);
+      }
     }
   }, [title, content, tags, folderId, note]);
 
@@ -163,6 +176,33 @@ export default function NoteEditor() {
       }
     } catch (error) {
       console.error('Auto-save failed:', error);
+    }
+  };
+
+  const autoSaveNewNote = async () => {
+    if (!user || isSaving || !title.trim() && !content.trim()) return;
+    
+    try {
+      const { data, error } = await (supabase as any)
+        .from('notes')
+        .insert([{
+          user_id: user.id,
+          title: title.trim() || 'Untitled',
+          content,
+          tags,
+          folder_id: folderId,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Navigate to the new note
+      navigate(`/editor/${data.id}`, { replace: true });
+      setNote(data);
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error('Auto-save new note failed:', error);
     }
   };
 
