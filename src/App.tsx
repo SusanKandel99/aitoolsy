@@ -14,6 +14,7 @@ import Search from "./pages/Search";
 import Starred from "./pages/Starred";
 import AIAssistant from "./pages/AIAssistant";
 import Flashcards from "./pages/Flashcards";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
                         <Route path="/starred" element={<Starred />} />
                         <Route path="/ai-assistant" element={<AIAssistant />} />
                         <Route path="/flashcards" element={<Flashcards />} />
+                        <Route path="/settings" element={<Settings />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </div>
