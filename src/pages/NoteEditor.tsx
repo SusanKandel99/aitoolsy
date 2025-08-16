@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { NoteHistory } from '@/components/NoteHistory';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +11,7 @@ import { ArrowLeft, Save, Star, StarOff, Trash2, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { TagManager } from '@/components/TagManager';
 import { FolderSelector } from '@/components/FolderSelector';
+import { formatDistanceToNow, format } from 'date-fns';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -330,6 +332,14 @@ export default function NoteEditor() {
     }
   };
 
+  const handleHistoryRestore = (historyEntry: any) => {
+    setTitle(historyEntry.title);
+    setContent(historyEntry.content || '');
+    setTags(historyEntry.tags || []);
+    setFolderId(historyEntry.folder_id);
+    setHasUnsavedChanges(true);
+  };
+
   const deleteNote = async () => {
     if (!note) return;
 
@@ -392,6 +402,11 @@ export default function NoteEditor() {
           <div className="flex items-center gap-2">
                 {note && (
                   <>
+                    <NoteHistory 
+                      noteId={note.id} 
+                      onRestore={handleHistoryRestore}
+                    />
+                    
                     <Button
                       variant="ghost"
                       size="sm"
@@ -487,9 +502,19 @@ export default function NoteEditor() {
 
           {/* Metadata */}
           {note && (
-            <div className="text-sm text-muted-foreground border-t pt-4">
-              <p>Created: {new Date(note.created_at).toLocaleDateString()}</p>
-              <p>Last modified: {new Date(note.updated_at).toLocaleDateString()}</p>
+            <div className="text-sm text-muted-foreground border-t pt-4 space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="font-medium text-foreground mb-1">Created</p>
+                  <p>{format(new Date(note.created_at), 'PPpp')}</p>
+                  <p className="text-xs">{formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground mb-1">Last Modified</p>
+                  <p>{format(new Date(note.updated_at), 'PPpp')}</p>
+                  <p className="text-xs">{formatDistanceToNow(new Date(note.updated_at), { addSuffix: true })}</p>
+                </div>
+              </div>
             </div>
           )}
         </div>
