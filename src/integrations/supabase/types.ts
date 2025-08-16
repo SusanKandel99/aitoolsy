@@ -82,6 +82,42 @@ export type Database = {
         }
         Relationships: []
       }
+      note_history: {
+        Row: {
+          content: string | null
+          created_at: string
+          folder_id: string | null
+          id: string
+          note_id: string
+          tags: string[] | null
+          title: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          folder_id?: string | null
+          id?: string
+          note_id: string
+          tags?: string[] | null
+          title: string
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          folder_id?: string | null
+          id?: string
+          note_id?: string
+          tags?: string[] | null
+          title?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           content: string | null
