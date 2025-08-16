@@ -29,27 +29,27 @@ serve(async (req) => {
 
     switch (action) {
       case 'improve':
-        systemPrompt = 'You are an expert writing assistant. Improve the given text by making it clearer, more engaging, and better structured while maintaining the original meaning and tone.';
-        userPrompt = `Please improve this text:\n\n${content}`;
+        systemPrompt = 'You are an expert writing assistant. Improve the given text by making it clearer, more engaging, and better structured while maintaining the original meaning and tone. Format your response with proper paragraphs, lists, and structure. Use HTML formatting where appropriate (p, ul, ol, li, strong, em tags).';
+        userPrompt = `Please improve this text with proper formatting:\n\n${content}`;
         break;
       case 'summarize':
-        systemPrompt = 'You are an expert summarizer. Create concise, informative summaries that capture the key points and essential information.';
-        userPrompt = `Please summarize this text:\n\n${content}`;
+        systemPrompt = 'You are an expert summarizer. Create concise, informative summaries that capture the key points and essential information. Format your response with clear paragraphs and bullet points using HTML formatting (p, ul, li tags).';
+        userPrompt = `Please summarize this text with proper formatting:\n\n${content}`;
         break;
       case 'expand':
-        systemPrompt = 'You are a creative writing assistant. Expand the given text with relevant details, examples, and elaboration while maintaining consistency with the original content.';
-        userPrompt = `Please expand on this text with more details and examples:\n\n${content}`;
+        systemPrompt = 'You are a creative writing assistant. Expand the given text with relevant details, examples, and elaboration while maintaining consistency with the original content. Format your response with proper paragraphs, lists, and structure using HTML formatting.';
+        userPrompt = `Please expand on this text with more details, examples, and proper formatting:\n\n${content}`;
         break;
       case 'tone':
-        systemPrompt = 'You are a writing style expert. Adjust the tone of the given text to be more professional, friendly, or appropriate for the intended audience.';
-        userPrompt = `Please adjust the tone of this text to be more professional and engaging:\n\n${content}`;
+        systemPrompt = 'You are a writing style expert. Adjust the tone of the given text to be more professional, friendly, or appropriate for the intended audience. Format your response with proper paragraphs and structure using HTML formatting.';
+        userPrompt = `Please adjust the tone of this text to be more professional and engaging, with proper formatting:\n\n${content}`;
         break;
       case 'generate':
-        systemPrompt = 'You are a creative writing assistant. Generate high-quality, engaging content based on the user\'s prompt. Be informative, well-structured, and helpful.';
+        systemPrompt = 'You are a creative writing assistant. Generate high-quality, engaging content based on the user\'s prompt. Be informative, well-structured, and helpful. Format your response with proper paragraphs, headings, lists, and structure using HTML formatting (h3, p, ul, ol, li, strong, em tags).';
         userPrompt = prompt;
         break;
       default:
-        systemPrompt = 'You are a helpful AI assistant for note-taking and writing. Assist the user with their request in a clear and concise manner.';
+        systemPrompt = 'You are a helpful AI assistant for note-taking and writing. Assist the user with their request in a clear and concise manner. Format your response with proper HTML structure.';
         userPrompt = prompt || content;
     }
 
@@ -90,7 +90,38 @@ serve(async (req) => {
       throw new Error('Invalid response from OpenRouter API');
     }
 
-    const generatedText = data.choices[0].message.content;
+    let generatedText = data.choices[0].message.content;
+    
+    // Convert plain text to HTML if it's not already formatted
+    if (!generatedText.includes('<p>') && !generatedText.includes('<ul>') && !generatedText.includes('<ol>')) {
+      // Split by double newlines for paragraphs
+      const paragraphs = generatedText.split('\n\n').filter(p => p.trim());
+      
+      generatedText = paragraphs.map(paragraph => {
+        const trimmed = paragraph.trim();
+        
+        // Check if it's a numbered list
+        if (/^\d+[\.)]\s/.test(trimmed)) {
+          const items = trimmed.split(/\n(?=\d+[\.)]\s)/).map(item => {
+            const content = item.replace(/^\d+[\.)]\s/, '').trim();
+            return `<li>${content}</li>`;
+          }).join('');
+          return `<ol>${items}</ol>`;
+        }
+        
+        // Check if it's a bulleted list
+        if (/^[\*\-\•]\s/.test(trimmed) || trimmed.includes('\n* ') || trimmed.includes('\n- ')) {
+          const items = trimmed.split(/\n(?=[\*\-\•]\s)/).map(item => {
+            const content = item.replace(/^[\*\-\•]\s/, '').trim();
+            return `<li>${content}</li>`;
+          }).join('');
+          return `<ul>${items}</ul>`;
+        }
+        
+        // Regular paragraph
+        return `<p>${trimmed}</p>`;
+      }).join('');
+    }
 
     return new Response(JSON.stringify({ 
       result: generatedText,
