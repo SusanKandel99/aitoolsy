@@ -128,10 +128,45 @@ export function RichTextEditor({ content, onChange, placeholder = "Start writing
   const addImage = () => {
     if (!editor) return;
     
-    const url = window.prompt('Enter image URL:');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        // Upload to Supabase storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('note-images')
+          .upload(fileName, file);
+
+        if (error) throw error;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('note-images')
+          .getPublicUrl(fileName);
+
+        editor.chain().focus().setImage({ src: publicUrl }).run();
+        
+        toast({
+          title: "Image uploaded",
+          description: "Image has been added to your note.",
+        });
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload image. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+    input.click();
   };
 
   if (!editor) {
@@ -273,10 +308,15 @@ export function RichTextEditor({ content, onChange, placeholder = "Start writing
       </div>
 
       {/* Editor */}
-      <EditorContent 
-        editor={editor} 
-        className="prose prose-sm max-w-none p-4 min-h-[200px] focus-within:outline-none"
-      />
+      <div 
+        className="min-h-[200px] p-4 cursor-text"
+        onClick={() => editor?.commands.focus()}
+      >
+        <EditorContent 
+          editor={editor} 
+          className="prose prose-sm max-w-none focus-within:outline-none"
+        />
+      </div>
     </div>
   );
 }

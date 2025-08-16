@@ -36,7 +36,12 @@ export function NoteCard({
   };
 
   const getPreview = (text: string) => {
-    const plainText = text.replace(/[#*`\[\]]/g, '').trim();
+    // Remove HTML tags and empty p tags
+    const plainText = text
+      .replace(/<p><\/p>/g, '')  // Remove empty p tags
+      .replace(/<[^>]*>/g, '')   // Remove all HTML tags
+      .replace(/[#*`\[\]]/g, '') // Remove markdown symbols
+      .trim();
     return plainText.length > 120 ? plainText.substring(0, 120) + '...' : plainText;
   };
 
