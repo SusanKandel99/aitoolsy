@@ -136,20 +136,32 @@ export function RichTextEditor({ content, onChange, placeholder = "Start writing
       if (!file) return;
 
       try {
-        // Upload to Supabase storage
+        // Upload to Supabase storage with user folder structure
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          toast({
+            title: "Authentication required",
+            description: "Please sign in to upload images.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const filePath = `${user.id}/${fileName}`;
         
         const { data, error } = await supabase.storage
           .from('note-images')
-          .upload(fileName, file);
+          .upload(filePath, file);
 
         if (error) throw error;
 
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('note-images')
-          .getPublicUrl(fileName);
+          .getPublicUrl(filePath);
 
         editor.chain().focus().setImage({ src: publicUrl }).run();
         
