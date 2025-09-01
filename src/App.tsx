@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AppSidebar } from "@/components/AppSidebar";
+import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import NoteEditor from "./pages/NoteEditor";
 import Auth from "./pages/Auth";
@@ -26,6 +27,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route 
               path="/*" 
@@ -38,7 +40,7 @@ const App = () => (
                         <SidebarTrigger />
                       </header>
                       <Routes>
-                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/editor/:noteId" element={<NoteEditor />} />
                         <Route path="/editor" element={<NoteEditor />} />
                         <Route path="/search" element={<Search />} />
