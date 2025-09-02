@@ -1,63 +1,15 @@
-import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
 import { Brain, Sparkles, FileText, Zap, History, Lightbulb, Search, Tags, Users, BarChart3 } from 'lucide-react';
 
 const Index = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { user, signUp, signIn } = useAuth();
-  const { toast } = useToast();
+  const { user } = useAuth();
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    const { error } = await signUp(email, password);
-    
-    if (error) {
-      toast({
-        title: "Error signing up",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success!",
-        description: "Please check your email to confirm your account.",
-      });
-    }
-    
-    setLoading(false);
-  };
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    const { error } = await signIn(email, password);
-    
-    if (error) {
-      toast({
-        title: "Error signing in",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-    
-    setLoading(false);
-  };
 
   const features = [
     {
@@ -142,95 +94,16 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Right side - Auth form */}
-            <div className="flex justify-center auth-section">
-              <Card className="w-full max-w-md shadow-2xl border-0 bg-card/80 backdrop-blur-lg">
-                <CardHeader className="text-center pb-4">
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mb-4">
-                    <Brain className="w-8 h-8 text-white" />
-                  </div>
-                  <CardTitle className="text-2xl">Join aitoolsy</CardTitle>
-                  <CardDescription>
-                    Sign in to your account or create a new one
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="signin" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="signin">Sign In</TabsTrigger>
-                      <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="signin" className="space-y-4 mt-6">
-                      <form onSubmit={handleSignIn} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="email">Email</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            placeholder="Enter your email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="password">Password</Label>
-                          <Input
-                            id="password"
-                            type="password"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <Button 
-                          type="submit" 
-                          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white" 
-                          disabled={loading}
-                        >
-                          {loading ? "Signing in..." : "Sign In"}
-                        </Button>
-                      </form>
-                    </TabsContent>
-                    
-                    <TabsContent value="signup" className="space-y-4 mt-6">
-                      <form onSubmit={handleSignUp} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="signup-email">Email</Label>
-                          <Input
-                            id="signup-email"
-                            type="email"
-                            placeholder="Enter your email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="signup-password">Password</Label>
-                          <Input
-                            id="signup-password"
-                            type="password"
-                            placeholder="Create a password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <Button 
-                          type="submit" 
-                          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white" 
-                          disabled={loading}
-                        >
-                          {loading ? "Creating account..." : "Create Account"}
-                        </Button>
-                      </form>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
+            {/* Right side - CTA */}
+            <div className="flex justify-center">
+              <div className="text-center space-y-8">
+                <div className="w-32 h-32 mx-auto bg-gradient-to-br from-primary to-accent rounded-3xl flex items-center justify-center">
+                  <Brain className="w-16 h-16 text-white" />
+                </div>
+                <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white px-12 py-4 text-lg">
+                  Get Started
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -250,11 +123,6 @@ const Index = () => {
             <Button 
               size="lg" 
               className="bg-white text-primary hover:bg-white/90 font-semibold px-8 py-4 text-lg"
-              onClick={() => {
-                const signupTab = document.querySelector('[data-value="signup"]') as HTMLButtonElement;
-                signupTab?.click();
-                document.querySelector('.auth-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
             >
               Start Your Journey →
             </Button>
