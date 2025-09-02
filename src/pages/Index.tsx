@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,6 +6,7 @@ import { Brain, Sparkles, FileText, Zap, History, Lightbulb, Search, Tags, Users
 
 const Index = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -83,6 +84,7 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   className="bg-gradient-primary hover:shadow-glow text-white text-lg px-8 py-4 h-auto font-semibold transition-all duration-300 hover:scale-105 shadow-elegant"
+                  onClick={() => navigate('/auth')}
                 >
                   Get Started Free
                 </Button>
