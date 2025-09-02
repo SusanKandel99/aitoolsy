@@ -74,20 +74,16 @@ const Index = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white">
-                  Get Started Free
-                </Button>
                 <Button size="lg" variant="outline">
                   Watch Demo
                 </Button>
               </div>
               
-              <div className="flex items-center gap-6 text-sm text-muted-foreground justify-center lg:justify-start">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  Free to start
-                </div>
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-6 text-sm justify-center lg:justify-start">
+                <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white">
+                  Get Started Free
+                </Button>
+                <div className="flex items-center gap-2 text-muted-foreground">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   No credit card required
                 </div>
@@ -100,9 +96,6 @@ const Index = () => {
                 <div className="w-32 h-32 mx-auto bg-gradient-to-br from-primary to-accent rounded-3xl flex items-center justify-center">
                   <Brain className="w-16 h-16 text-white" />
                 </div>
-                <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white px-12 py-4 text-lg">
-                  Get Started
-                </Button>
               </div>
             </div>
           </div>
