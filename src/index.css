@@ -8,43 +8,50 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 250 100% 99%;
+    --foreground: 240 10% 3.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 10% 3.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 10% 3.9%;
 
-    --primary: 245 58% 51%;
+    --primary: 262 83% 58%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 245 58% 51%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262 83% 58%;
 
     --radius: 0.75rem;
 
-    /* Custom design tokens for aitoolsy */
-    --gradient-primary: linear-gradient(135deg, hsl(245 58% 51%), hsl(217 91% 60%));
-    --gradient-secondary: linear-gradient(135deg, hsl(210 40% 96.1%), hsl(214.3 31.8% 91.4%));
-    --shadow-soft: 0 4px 6px -1px hsl(245 58% 51% / 0.05), 0 2px 4px -2px hsl(245 58% 51% / 0.03);
-    --shadow-medium: 0 10px 15px -3px hsl(245 58% 51% / 0.1), 0 4px 6px -4px hsl(245 58% 51% / 0.05);
-    --shadow-large: 0 25px 50px -12px hsl(245 58% 51% / 0.15);
+    /* Enhanced design tokens for aitoolsy */
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(300 83% 58%) 50%, hsl(262 83% 68%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(220 14.3% 95.9%) 0%, hsl(210 40% 98%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(300 83% 58%) 30%, hsl(340 83% 58%) 60%, hsl(262 83% 68%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(262 83% 58% / 0.05) 0%, hsl(300 83% 58% / 0.1) 100%);
+    
+    --shadow-elegant: 0 10px 40px -10px hsl(262 83% 58% / 0.2);
+    --shadow-glow: 0 0 40px hsl(262 83% 58% / 0.3);
+    --shadow-soft: 0 4px 6px -1px hsl(262 83% 58% / 0.05), 0 2px 4px -2px hsl(262 83% 58% / 0.03);
+    --shadow-medium: 0 10px 15px -3px hsl(262 83% 58% / 0.1), 0 4px 6px -4px hsl(262 83% 58% / 0.05);
+    --shadow-large: 0 25px 50px -12px hsl(262 83% 58% / 0.25);
+    
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 251 91% 95%;
     --sidebar-foreground: 240 5.3% 26.1%;
