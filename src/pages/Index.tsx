@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { Brain, Sparkles, FileText, Zap, History, Lightbulb, Search, Tags, Users, BarChart3 } from 'lucide-react';
+import { initializeDemoMode } from '@/utils/demoData';
 
 const Index = () => {
   const { user } = useAuth();
@@ -92,6 +93,11 @@ const Index = () => {
                   size="lg" 
                   variant="outline" 
                   className="text-lg px-8 py-4 h-auto font-semibold border-2 hover:bg-primary/5 transition-all duration-300 hover:scale-105"
+                  onClick={() => {
+                    // Initialize demo mode and navigate to dashboard
+                    initializeDemoMode();
+                    navigate('/dashboard');
+                  }}
                 >
                   Watch Demo
                 </Button>
@@ -142,6 +148,11 @@ const Index = () => {
             <Button 
               size="lg" 
               className="bg-white text-primary hover:bg-white/95 hover:scale-105 font-bold px-12 py-6 text-xl h-auto shadow-elegant transition-all duration-300"
+              onClick={() => {
+                // Initialize demo mode and navigate to dashboard
+                initializeDemoMode();
+                navigate('/dashboard');
+              }}
             >
               Start Your Journey →
             </Button>

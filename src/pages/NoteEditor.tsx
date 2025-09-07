@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { isDemoMode, getDemoNotes, saveDemoNotes, getDemoUser, type DemoNote } from '@/utils/demoData';
 
 interface Note {
   id: string;
@@ -57,6 +58,10 @@ export default function NoteEditor() {
     showPreview: true,
   });
 
+  // Check if we're in demo mode
+  const isDemo = isDemoMode();
+  const demoUser = getDemoUser();
+
   useEffect(() => {
     // Load preferences from localStorage
     const savedPrefs = localStorage.getItem('app-preferences');
@@ -82,7 +87,29 @@ export default function NoteEditor() {
   }, []);
 
   useEffect(() => {
-    if (noteId && user) {
+    if (isDemo) {
+      if (noteId) {
+        const demoNotes = getDemoNotes();
+        const demoNote = demoNotes.find(n => n.id === noteId);
+        if (demoNote) {
+          setNote(demoNote);
+          setTitle(demoNote.title);
+          setContent(demoNote.content || '');
+          setTags(demoNote.tags || []);
+          setFolderId(demoNote.folder_id);
+        } else {
+          navigate('/dashboard');
+          return;
+        }
+      } else {
+        // New note in demo mode
+        setTitle('Untitled');
+        setContent('');
+        setTags([]);
+        setFolderId(null);
+      }
+      setIsLoading(false);
+    } else if (noteId && user) {
       fetchNote();
     } else if (!noteId) {
       // New note
@@ -92,7 +119,7 @@ export default function NoteEditor() {
       setTags([]);
       setFolderId(null);
     }
-  }, [noteId, user]);
+  }, [noteId, user, isDemo]);
 
   useEffect(() => {
     if (note) {
@@ -181,9 +208,41 @@ export default function NoteEditor() {
   };
 
   const autoSave = async () => {
-    if (!user || isSaving || !hasUnsavedChanges) return;
+    if (isSaving || !hasUnsavedChanges) return;
     
     try {
+      if (isDemo) {
+        if (noteId && note) {
+          // Auto-save existing demo note
+          const demoNotes = getDemoNotes();
+          const updatedNotes = demoNotes.map(n =>
+            n.id === noteId
+              ? {
+                  ...n,
+                  title: title.trim() || 'Untitled',
+                  content,
+                  tags,
+                  folder_id: folderId,
+                  updated_at: new Date().toISOString()
+                }
+              : n
+          );
+          saveDemoNotes(updatedNotes);
+          setNote({
+            ...note,
+            title: title.trim() || 'Untitled',
+            content,
+            tags,
+            folder_id: folderId,
+            updated_at: new Date().toISOString()
+          });
+          setHasUnsavedChanges(false);
+        }
+        return;
+      }
+      
+      if (!user) return;
+      
       if (noteId && note) {
         // Auto-save existing note
         await (supabase as any)
@@ -214,9 +273,36 @@ export default function NoteEditor() {
   };
 
   const autoSaveNewNote = async () => {
-    if (!user || isSaving || !title.trim() && !content.trim()) return;
+    if (isSaving || !title.trim() && !content.trim()) return;
     
     try {
+      if (isDemo) {
+        // Create new demo note
+        const newNote: DemoNote = {
+          id: `note-${Date.now()}`,
+          user_id: demoUser?.id || 'demo-user',
+          title: title.trim() || 'Untitled',
+          content,
+          tags,
+          folder_id: folderId,
+          is_starred: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        const demoNotes = getDemoNotes();
+        const updatedNotes = [newNote, ...demoNotes];
+        saveDemoNotes(updatedNotes);
+        
+        // Navigate to the new note
+        navigate(`/editor/${newNote.id}`, { replace: true });
+        setNote(newNote);
+        setHasUnsavedChanges(false);
+        return;
+      }
+      
+      if (!user) return;
+      
       const { data, error } = await (supabase as any)
         .from('notes')
         .insert([{
@@ -241,11 +327,67 @@ export default function NoteEditor() {
   };
 
   const saveNote = async () => {
-    if (!user) return;
-
     setIsSaving(true);
 
     try {
+      if (isDemo) {
+        if (noteId) {
+          // Update existing demo note
+          const demoNotes = getDemoNotes();
+          const updatedNotes = demoNotes.map(n =>
+            n.id === noteId
+              ? {
+                  ...n,
+                  title: title.trim() || 'Untitled',
+                  content,
+                  tags,
+                  folder_id: folderId,
+                  updated_at: new Date().toISOString()
+                }
+              : n
+          );
+          saveDemoNotes(updatedNotes);
+          setNote({
+            ...note,
+            title: title.trim() || 'Untitled',
+            content,
+            tags,
+            folder_id: folderId,
+            updated_at: new Date().toISOString()
+          });
+        } else {
+          // Create new demo note
+          const newNote: DemoNote = {
+            id: `note-${Date.now()}`,
+            user_id: demoUser?.id || 'demo-user',
+            title: title.trim() || 'Untitled',
+            content,
+            tags,
+            folder_id: folderId,
+            is_starred: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          const demoNotes = getDemoNotes();
+          const updatedNotes = [newNote, ...demoNotes];
+          saveDemoNotes(updatedNotes);
+          
+          // Navigate to the new note
+          navigate(`/editor/${newNote.id}`, { replace: true });
+          setNote(newNote);
+        }
+        
+        setHasUnsavedChanges(false);
+        toast({
+          title: "Note saved",
+          description: "Your note has been saved successfully.",
+        });
+        return;
+      }
+
+      if (!user) return;
+
       if (noteId) {
         const { error } = await (supabase as any)
           .from('notes')
@@ -309,6 +451,22 @@ export default function NoteEditor() {
     if (!note) return;
 
     try {
+      if (isDemo) {
+        const newStarredState = !note.is_starred;
+        const demoNotes = getDemoNotes();
+        const updatedNotes = demoNotes.map(n =>
+          n.id === note.id ? { ...n, is_starred: newStarredState } : n
+        );
+        saveDemoNotes(updatedNotes);
+        setNote({ ...note, is_starred: newStarredState });
+        
+        toast({
+          title: newStarredState ? "Note starred" : "Note unstarred",
+          description: newStarredState ? "Added to starred notes" : "Removed from starred notes",
+        });
+        return;
+      }
+
       const newStarredState = !note.is_starred;
       const { error } = await (supabase as any)
         .from('notes')
@@ -344,6 +502,19 @@ export default function NoteEditor() {
     if (!note) return;
 
     try {
+      if (isDemo) {
+        const demoNotes = getDemoNotes();
+        const updatedNotes = demoNotes.filter(n => n.id !== note.id);
+        saveDemoNotes(updatedNotes);
+        
+        toast({
+          title: "Note deleted",
+          description: "The note has been permanently deleted.",
+        });
+        navigate('/dashboard');
+        return;
+      }
+
       const { error } = await (supabase as any)
         .from('notes')
         .delete()
@@ -355,7 +526,7 @@ export default function NoteEditor() {
         title: "Note deleted",
         description: "The note has been permanently deleted.",
       });
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       console.error('Error deleting note:', error);
       toast({
@@ -386,7 +557,7 @@ export default function NoteEditor() {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/dashboard')}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back

@@ -8,6 +8,7 @@ import { NoteCard } from '@/components/NoteCard';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { isDemoMode, getDemoNotes, getDemoFolders, saveDemoNotes, getDemoUser } from '@/utils/demoData';
 
 interface Note {
   id: string;
@@ -18,6 +19,7 @@ interface Note {
   created_at: string;
   folder_id: string | null;
   tags: string[];
+  user_id?: string;
 }
 
 interface Folder {
@@ -40,13 +42,22 @@ export default function Dashboard() {
   const selectedFolderId = searchParams.get('folder');
   const selectedTag = searchParams.get('tag');
 
+  // Check if we're in demo mode
+  const isDemo = isDemoMode();
+  const demoUser = getDemoUser();
+
   useEffect(() => {
-    if (user) {
+    if (isDemo) {
+      // Load demo data
+      setNotes(getDemoNotes());
+      setFolders(getDemoFolders());
+      setLoadingNotes(false);
+    } else if (user) {
       fetchNotes();
       fetchFolders();
       setupRealTimeSubscriptions();
     }
-  }, [user]);
+  }, [user, isDemo]);
 
   const fetchNotes = async () => {
     try {
@@ -139,6 +150,32 @@ export default function Dashboard() {
   };
 
   const handleCreateNote = async () => {
+    if (isDemo) {
+      // Create demo note
+      const newNote: Note = {
+        id: `note-${Date.now()}`,
+        user_id: demoUser?.id || 'demo-user',
+        title: 'Untitled',
+        content: '',
+        is_starred: false,
+        folder_id: null,
+        tags: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      const updatedNotes = [newNote, ...notes];
+      setNotes(updatedNotes);
+      saveDemoNotes(updatedNotes as any);
+      
+      toast({
+        title: "Note created",
+        description: "A new note has been created.",
+      });
+      navigate(`/editor/${newNote.id}`);
+      return;
+    }
+
     if (!user) return;
 
     try {
@@ -173,6 +210,16 @@ export default function Dashboard() {
   };
 
   const handleToggleStar = async (noteId: string, currentStarred: boolean) => {
+    if (isDemo) {
+      // Update demo note
+      const updatedNotes = notes.map(note =>
+        note.id === noteId ? { ...note, is_starred: !currentStarred } : note
+      );
+      setNotes(updatedNotes);
+      saveDemoNotes(updatedNotes as any);
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('notes')
@@ -215,7 +262,7 @@ export default function Dashboard() {
   const filteredNotes = getFilteredNotes();
   const selectedFolder = selectedFolderId ? folders.find(f => f.id === selectedFolderId) : null;
 
-  if (loading) {
+  if (loading && !isDemo) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -226,7 +273,7 @@ export default function Dashboard() {
     );
   }
 
-  if (!user) {
+  if (!user && !isDemo) {
     return <Navigate to="/auth" replace />;
   }
 
