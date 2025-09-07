@@ -75,26 +75,30 @@ export const demoNotes: DemoNote[] = [
   {
     id: 'note-3',
     user_id: 'demo-user',
-    title: 'Creative Writing Ideas',
-    content: `<h2>Story Concepts</h2>
+    title: 'Project Documentation Template',
+    content: `<h2>📋 Standard Project Documentation</h2>
     
-    <h3>📚 "The Digital Librarian"</h3>
-    <p>A story about an AI that becomes sentient while organizing humanity's knowledge. It discovers hidden patterns in human behavior and starts predicting the future.</p>
+    <h3>Project Overview</h3>
+    <ul>
+      <li><strong>Objective:</strong> Clear project goals and outcomes</li>
+      <li><strong>Timeline:</strong> Key milestones and deadlines</li>
+      <li><strong>Resources:</strong> Team members and budget allocation</li>
+    </ul>
     
-    <h3>🌟 "Constellation Maps"</h3>
-    <p>In a world where emotions create visible light patterns in the sky, a young astronomer discovers that star constellations are actually collective human memories.</p>
+    <h3>Technical Specifications</h3>
+    <ul>
+      <li>Technology stack requirements</li>
+      <li>API integrations and dependencies</li>
+      <li>Performance benchmarks</li>
+    </ul>
     
-    <h3>🔮 "The Note Keeper"</h3>
-    <p>Every thought someone writes down comes to life in a parallel dimension. A writer discovers their notes are creating an entire universe.</p>
-    
-    <blockquote>
-      <p>"Ideas are like seeds - they need the right environment to grow into something beautiful."</p>
-    </blockquote>`,
-    is_starred: true,
-    folder_id: 'folder-2',
-    tags: ['creative', 'writing', 'stories', 'ideas'],
-    created_at: '2024-01-14T20:15:00Z',
-    updated_at: '2024-01-15T08:20:00Z',
+    <h3>Risk Assessment</h3>
+    <p>Identify potential blockers and mitigation strategies early in the project lifecycle.</p>`,
+    is_starred: false,
+    folder_id: 'folder-1',
+    tags: ['documentation', 'template', 'project-management'],
+    created_at: '2024-01-14T14:30:00Z',
+    updated_at: '2024-01-14T16:20:00Z',
   },
   {
     id: 'note-4',
@@ -133,6 +137,30 @@ const OptimizedComponent = React.memo(({ data, onUpdate }) => {
   {
     id: 'note-5',
     user_id: 'demo-user',
+    title: 'Creative Writing Ideas',
+    content: `<h2>Story Concepts</h2>
+    
+    <h3>📚 "The Digital Librarian"</h3>
+    <p>A story about an AI that becomes sentient while organizing humanity's knowledge. It discovers hidden patterns in human behavior and starts predicting the future.</p>
+    
+    <h3>🌟 "Constellation Maps"</h3>
+    <p>In a world where emotions create visible light patterns in the sky, a young astronomer discovers that star constellations are actually collective human memories.</p>
+    
+    <h3>🔮 "The Note Keeper"</h3>
+    <p>Every thought someone writes down comes to life in a parallel dimension. A writer discovers their notes are creating an entire universe.</p>
+    
+    <blockquote>
+      <p>"Ideas are like seeds - they need the right environment to grow into something beautiful."</p>
+    </blockquote>`,
+    is_starred: true,
+    folder_id: 'folder-2',
+    tags: ['creative', 'writing', 'stories', 'ideas'],
+    created_at: '2024-01-14T20:15:00Z',
+    updated_at: '2024-01-15T08:20:00Z',
+  },
+  {
+    id: 'note-6',
+    user_id: 'demo-user',
     title: 'Travel Journal - Tokyo Adventure',
     content: `<h2>🗾 Tokyo Trip - Day 1</h2>
     <p><strong>January 10, 2024</strong></p>
@@ -158,7 +186,64 @@ const OptimizedComponent = React.memo(({ data, onUpdate }) => {
     updated_at: '2024-01-11T08:45:00Z',
   },
   {
-    id: 'note-6',
+    id: 'note-7',
+    user_id: 'demo-user',
+    title: 'Book Reading List',
+    content: `<h2>📖 2024 Reading Goals</h2>
+    
+    <h3>Currently Reading</h3>
+    <ul>
+      <li><strong>"Atomic Habits"</strong> by James Clear - Building systems for success</li>
+      <li><strong>"The Power of Now"</strong> by Eckhart Tolle - Mindfulness and presence</li>
+    </ul>
+    
+    <h3>Next to Read</h3>
+    <ul>
+      <li>"Sapiens" by Yuval Noah Harari</li>
+      <li>"The Subtle Art of Not Giving a F*ck" by Mark Manson</li>
+      <li>"Deep Work" by Cal Newport</li>
+    </ul>
+    
+    <h3>Favorite Quotes</h3>
+    <blockquote>
+      <p>"You do not rise to the level of your goals. You fall to the level of your systems." - James Clear</p>
+    </blockquote>`,
+    is_starred: false,
+    folder_id: 'folder-2',
+    tags: ['books', 'reading', 'self-improvement', 'goals'],
+    created_at: '2024-01-12T19:45:00Z',
+    updated_at: '2024-01-13T21:10:00Z',
+  },
+  {
+    id: 'note-8',
+    user_id: 'demo-user',
+    title: 'Daily Reflections & Gratitude',
+    content: `<h2>🌅 Morning Reflections - January 16, 2024</h2>
+    
+    <h3>Gratitude List</h3>
+    <ul>
+      <li>Warm cup of coffee on a cold morning</li>
+      <li>Productive conversation with my team</li>
+      <li>Beautiful sunset walk in the park</li>
+      <li>Learning something new every day</li>
+    </ul>
+    
+    <h3>Today's Intentions</h3>
+    <ul>
+      <li>Be present in all conversations</li>
+      <li>Take breaks to appreciate small moments</li>
+      <li>Practice patience with challenging situations</li>
+    </ul>
+    
+    <p><em>Note: Gratitude transforms ordinary moments into extraordinary experiences.</em></p>`,
+    is_starred: true,
+    folder_id: 'folder-2',
+    tags: ['gratitude', 'reflection', 'mindfulness', 'journal'],
+    created_at: '2024-01-16T07:30:00Z',
+    updated_at: '2024-01-16T07:45:00Z',
+  },
+  {
+    id: 'note-9',
     user_id: 'demo-user',
     title: 'Startup Ideas & Innovations',
     content: `<h2>💡 Innovative Business Concepts</h2>
@@ -181,6 +266,65 @@ const OptimizedComponent = React.memo(({ data, onUpdate }) => {
     tags: ['startup', 'innovation', 'business', 'tech'],
     created_at: '2024-01-12T11:20:00Z',
     updated_at: '2024-01-13T16:40:00Z',
+  },
+  {
+    id: 'note-10',
+    user_id: 'demo-user',
+    title: 'App Feature Brainstorm',
+    content: `<h2>🚀 Feature Ideas for Future Development</h2>
+    
+    <h3>Voice Notes Integration</h3>
+    <p>Record voice memos and automatically transcribe them into text. Perfect for capturing ideas on the go.</p>
+    
+    <h3>Smart Templates</h3>
+    <ul>
+      <li>Meeting notes template with automatic agenda formatting</li>
+      <li>Daily journal template with prompts</li>
+      <li>Project planning template with milestone tracking</li>
+    </ul>
+    
+    <h3>Collaboration Features</h3>
+    <ul>
+      <li>Real-time collaborative editing</li>
+      <li>Comment and suggestion system</li>
+      <li>Team workspace management</li>
+    </ul>
+    
+    <h3>Analytics Dashboard</h3>
+    <p>Track writing patterns, productivity metrics, and note-taking habits to improve workflow efficiency.</p>`,
+    is_starred: true,
+    folder_id: 'folder-3',
+    tags: ['features', 'brainstorm', 'development', 'roadmap'],
+    created_at: '2024-01-14T13:15:00Z',
+    updated_at: '2024-01-14T18:30:00Z',
+  },
+  {
+    id: 'note-11',
+    user_id: 'demo-user',
+    title: 'Market Research Insights',
+    content: `<h2>📊 Note-Taking App Market Analysis</h2>
+    
+    <h3>Key Market Trends</h3>
+    <ul>
+      <li><strong>AI Integration:</strong> 78% of users want AI-powered features</li>
+      <li><strong>Cross-Platform Sync:</strong> Essential for modern workflows</li>
+      <li><strong>Collaboration:</strong> Team features driving premium subscriptions</li>
+    </ul>
+    
+    <h3>Competitive Analysis</h3>
+    <ul>
+      <li><strong>Notion:</strong> Strong in database features, complex for simple notes</li>
+      <li><strong>Obsidian:</strong> Powerful linking, steep learning curve</li>
+      <li><strong>Roam:</strong> Excellent for researchers, expensive pricing</li>
+    </ul>
+    
+    <h3>Opportunity Areas</h3>
+    <p>Focus on simplicity with powerful AI features. Make advanced functionality accessible to everyday users.</p>`,
+    is_starred: false,
+    folder_id: 'folder-3',
+    tags: ['research', 'market', 'competition', 'analysis'],
+    created_at: '2024-01-11T16:00:00Z',
+    updated_at: '2024-01-12T10:30:00Z',
   }
 ];
 
