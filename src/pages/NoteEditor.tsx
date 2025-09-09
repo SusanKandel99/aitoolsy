@@ -87,7 +87,19 @@ export default function NoteEditor() {
   }, []);
 
   useEffect(() => {
-    if (isDemo) {
+    if (user) {
+      // User is authenticated - load their real note
+      if (noteId) {
+        fetchNote();
+      } else {
+        // New note
+        setIsLoading(false);
+        setTitle('Untitled');
+        setContent('');
+        setTags([]);
+        setFolderId(null);
+      }
+    } else if (isDemo) {
       if (noteId) {
         const demoNotes = getDemoNotes();
         const demoNote = demoNotes.find(n => n.id === noteId);
@@ -109,15 +121,6 @@ export default function NoteEditor() {
         setFolderId(null);
       }
       setIsLoading(false);
-    } else if (noteId && user) {
-      fetchNote();
-    } else if (!noteId) {
-      // New note
-      setIsLoading(false);
-      setTitle('Untitled');
-      setContent('');
-      setTags([]);
-      setFolderId(null);
     }
   }, [noteId, user, isDemo]);
 
@@ -211,6 +214,35 @@ export default function NoteEditor() {
     if (isSaving || !hasUnsavedChanges) return;
     
     try {
+      if (user) {
+        // User is authenticated - auto-save their real note
+        if (noteId && note) {
+          // Auto-save existing note
+          await (supabase as any)
+            .from('notes')
+            .update({ 
+              title: title.trim() || 'Untitled', 
+              content,
+              tags,
+              folder_id: folderId,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', noteId);
+
+          setNote({
+            ...note,
+            title: title.trim() || 'Untitled',
+            content,
+            tags,
+            folder_id: folderId,
+            updated_at: new Date().toISOString()
+          });
+          
+          setHasUnsavedChanges(false);
+        }
+        return;
+      }
+      
       if (isDemo) {
         if (noteId && note) {
           // Auto-save existing demo note
@@ -240,33 +272,6 @@ export default function NoteEditor() {
         }
         return;
       }
-      
-      if (!user) return;
-      
-      if (noteId && note) {
-        // Auto-save existing note
-        await (supabase as any)
-          .from('notes')
-          .update({ 
-            title: title.trim() || 'Untitled', 
-            content,
-            tags,
-            folder_id: folderId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', noteId);
-
-        setNote({
-          ...note,
-          title: title.trim() || 'Untitled',
-          content,
-          tags,
-          folder_id: folderId,
-          updated_at: new Date().toISOString()
-        });
-        
-        setHasUnsavedChanges(false);
-      }
     } catch (error) {
       console.error('Auto-save failed:', error);
     }
@@ -276,6 +281,29 @@ export default function NoteEditor() {
     if (isSaving || !title.trim() && !content.trim()) return;
     
     try {
+      if (user) {
+        // User is authenticated - create real new note
+        const { data, error } = await (supabase as any)
+          .from('notes')
+          .insert([{
+            user_id: user.id,
+            title: title.trim() || 'Untitled',
+            content,
+            tags,
+            folder_id: folderId,
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Navigate to the new note
+        navigate(`/editor/${data.id}`, { replace: true });
+        setNote(data);
+        setHasUnsavedChanges(false);
+        return;
+      }
+      
       if (isDemo) {
         // Create new demo note
         const newNote: DemoNote = {
@@ -300,27 +328,6 @@ export default function NoteEditor() {
         setHasUnsavedChanges(false);
         return;
       }
-      
-      if (!user) return;
-      
-      const { data, error } = await (supabase as any)
-        .from('notes')
-        .insert([{
-          user_id: user.id,
-          title: title.trim() || 'Untitled',
-          content,
-          tags,
-          folder_id: folderId,
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Navigate to the new note
-      navigate(`/editor/${data.id}`, { replace: true });
-      setNote(data);
-      setHasUnsavedChanges(false);
     } catch (error) {
       console.error('Auto-save new note failed:', error);
     }
@@ -330,6 +337,58 @@ export default function NoteEditor() {
     setIsSaving(true);
 
     try {
+      if (user) {
+        // User is authenticated - save their real note
+        if (noteId) {
+          const { error } = await (supabase as any)
+            .from('notes')
+            .update({ 
+              title: title.trim() || 'Untitled', 
+              content,
+              tags,
+              folder_id: folderId,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', noteId);
+
+          if (error) throw error;
+
+            setNote({
+              ...note,
+              title: title.trim() || 'Untitled',
+              content,
+              tags,
+              folder_id: folderId,
+              updated_at: new Date().toISOString()
+            });
+        } else {
+          const { data, error } = await (supabase as any)
+            .from('notes')
+            .insert([{
+              user_id: user.id,
+              title: title.trim() || 'Untitled',
+              content,
+              tags,
+              folder_id: folderId,
+            }])
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          // Navigate to the new note
+          navigate(`/editor/${data.id}`, { replace: true });
+          setNote(data);
+        }
+
+        setHasUnsavedChanges(false);
+        toast({
+          title: "Note saved",
+          description: "Your note has been saved successfully.",
+        });
+        return;
+      }
+
       if (isDemo) {
         if (noteId) {
           // Update existing demo note
@@ -385,56 +444,6 @@ export default function NoteEditor() {
         });
         return;
       }
-
-      if (!user) return;
-
-      if (noteId) {
-        const { error } = await (supabase as any)
-          .from('notes')
-          .update({ 
-            title: title.trim() || 'Untitled', 
-            content,
-            tags,
-            folder_id: folderId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', noteId);
-
-        if (error) throw error;
-
-          setNote({
-            ...note,
-            title: title.trim() || 'Untitled',
-            content,
-            tags,
-            folder_id: folderId,
-            updated_at: new Date().toISOString()
-          });
-      } else {
-        const { data, error } = await (supabase as any)
-          .from('notes')
-          .insert([{
-            user_id: user.id,
-            title: title.trim() || 'Untitled',
-            content,
-            tags,
-            folder_id: folderId,
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Navigate to the new note
-        navigate(`/editor/${data.id}`, { replace: true });
-        setNote(data);
-      }
-
-      setHasUnsavedChanges(false);
-      toast({
-        title: "Note saved",
-        description: "Your note has been saved successfully.",
-      });
     } catch (error) {
       console.error('Error saving note:', error);
       toast({
@@ -451,6 +460,24 @@ export default function NoteEditor() {
     if (!note) return;
 
     try {
+      if (user) {
+        // User is authenticated - update their real note
+        const newStarredState = !note.is_starred;
+        const { error } = await (supabase as any)
+          .from('notes')
+          .update({ is_starred: newStarredState })
+          .eq('id', note.id);
+
+        if (error) throw error;
+
+        setNote({ ...note, is_starred: newStarredState });
+        toast({
+          title: newStarredState ? "Note starred" : "Note unstarred",
+          description: newStarredState ? "Added to starred notes" : "Removed from starred notes",
+        });
+        return;
+      }
+
       if (isDemo) {
         const newStarredState = !note.is_starred;
         const demoNotes = getDemoNotes();
@@ -466,20 +493,6 @@ export default function NoteEditor() {
         });
         return;
       }
-
-      const newStarredState = !note.is_starred;
-      const { error } = await (supabase as any)
-        .from('notes')
-        .update({ is_starred: newStarredState })
-        .eq('id', note.id);
-
-      if (error) throw error;
-
-      setNote({ ...note, is_starred: newStarredState });
-      toast({
-        title: newStarredState ? "Note starred" : "Note unstarred",
-        description: newStarredState ? "Added to starred notes" : "Removed from starred notes",
-      });
     } catch (error) {
       console.error('Error toggling star:', error);
       toast({

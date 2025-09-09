@@ -7,6 +7,7 @@ import { NoteCard } from '@/components/NoteCard';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { isDemoMode, getDemoNotes, saveDemoNotes } from '@/utils/demoData';
 
 interface Note {
   id: string;
@@ -25,13 +26,27 @@ export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingNotes, setLoadingNotes] = useState(false);
 
+  // Check if we're in demo mode
+  const isDemo = isDemoMode();
+
   useEffect(() => {
     if (user && searchQuery.trim()) {
       performSearch();
+    } else if (isDemo && searchQuery.trim()) {
+      searchDemoNotes();
     } else {
       setNotes([]);
     }
-  }, [user, searchQuery]);
+  }, [user, searchQuery, isDemo]);
+
+  const searchDemoNotes = () => {
+    const demoNotes = getDemoNotes();
+    const filtered = demoNotes.filter(note => 
+      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setNotes(filtered);
+  };
 
   const performSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -61,31 +76,51 @@ export default function Search() {
   };
 
   const handleToggleStar = async (noteId: string, currentStarred: boolean) => {
-    try {
-      const { error } = await (supabase as any)
-        .from('notes')
-        .update({ is_starred: !currentStarred })
-        .eq('id', noteId);
+    if (user) {
+      // User is authenticated - update their real note
+      try {
+        const { error } = await (supabase as any)
+          .from('notes')
+          .update({ is_starred: !currentStarred })
+          .eq('id', noteId);
 
-      if (error) {
-        toast({
-          title: "Error updating note",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        setNotes(notes.map(note => 
-          note.id === noteId 
-            ? { ...note, is_starred: !currentStarred }
-            : note
-        ));
+        if (error) {
+          toast({
+            title: "Error updating note",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          setNotes(notes.map(note => 
+            note.id === noteId 
+              ? { ...note, is_starred: !currentStarred }
+              : note
+          ));
+        }
+      } catch (error) {
+        console.error('Error toggling star:', error);
       }
-    } catch (error) {
-      console.error('Error toggling star:', error);
+      return;
+    }
+
+    if (isDemo) {
+      // Update demo note
+      const demoNotes = getDemoNotes();
+      const updatedNotes = demoNotes.map(note =>
+        note.id === noteId ? { ...note, is_starred: !currentStarred } : note
+      );
+      saveDemoNotes(updatedNotes);
+      
+      // Update local state
+      setNotes(notes.map(note => 
+        note.id === noteId 
+          ? { ...note, is_starred: !currentStarred }
+          : note
+      ));
     }
   };
 
-  if (loading) {
+  if (loading && !user && !isDemo) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -96,7 +131,7 @@ export default function Search() {
     );
   }
 
-  if (!user) {
+  if (!user && !isDemo) {
     return <Navigate to="/auth" replace />;
   }
 

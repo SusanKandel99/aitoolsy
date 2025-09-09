@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { clearDemoMode } from '@/utils/demoData';
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Clear demo mode when user logs in
+        if (session?.user) {
+          clearDemoMode();
+        }
       }
     );
 

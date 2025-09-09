@@ -6,6 +6,7 @@ import { NoteCard } from '@/components/NoteCard';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { isDemoMode, getDemoNotes, saveDemoNotes } from '@/utils/demoData';
 
 interface Note {
   id: string;
@@ -24,11 +25,18 @@ export default function Starred() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loadingNotes, setLoadingNotes] = useState(true);
 
+  // Check if we're in demo mode
+  const isDemo = isDemoMode();
+
   useEffect(() => {
     if (user) {
       fetchStarredNotes();
+    } else if (isDemo) {
+      const demoNotes = getDemoNotes().filter(note => note.is_starred);
+      setNotes(demoNotes);
+      setLoadingNotes(false);
     }
-  }, [user]);
+  }, [user, isDemo]);
 
   const fetchStarredNotes = async () => {
     try {
@@ -55,28 +63,43 @@ export default function Starred() {
   };
 
   const handleToggleStar = async (noteId: string, currentStarred: boolean) => {
-    try {
-      const { error } = await (supabase as any)
-        .from('notes')
-        .update({ is_starred: !currentStarred })
-        .eq('id', noteId);
+    if (user) {
+      // User is authenticated - update their real note
+      try {
+        const { error } = await (supabase as any)
+          .from('notes')
+          .update({ is_starred: !currentStarred })
+          .eq('id', noteId);
 
-      if (error) {
-        toast({
-          title: "Error updating note",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        // Remove from starred view since it's no longer starred
-        setNotes(notes.filter(note => note.id !== noteId));
+        if (error) {
+          toast({
+            title: "Error updating note",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          // Remove from starred view since it's no longer starred
+          setNotes(notes.filter(note => note.id !== noteId));
+        }
+      } catch (error) {
+        console.error('Error toggling star:', error);
       }
-    } catch (error) {
-      console.error('Error toggling star:', error);
+      return;
+    }
+
+    if (isDemo) {
+      // Update demo note
+      const demoNotes = getDemoNotes();
+      const updatedNotes = demoNotes.map(note =>
+        note.id === noteId ? { ...note, is_starred: !currentStarred } : note
+      );
+      saveDemoNotes(updatedNotes);
+      // Remove from starred view since it's no longer starred
+      setNotes(notes.filter(note => note.id !== noteId));
     }
   };
 
-  if (loading) {
+  if (loading && !user && !isDemo) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -87,7 +110,7 @@ export default function Starred() {
     );
   }
 
-  if (!user) {
+  if (!user && !isDemo) {
     return <Navigate to="/auth" replace />;
   }
 

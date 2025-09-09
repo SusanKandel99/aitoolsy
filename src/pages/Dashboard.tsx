@@ -47,15 +47,16 @@ export default function Dashboard() {
   const demoUser = getDemoUser();
 
   useEffect(() => {
-    if (isDemo) {
-      // Load demo data
-      setNotes(getDemoNotes());
-      setFolders(getDemoFolders());
-      setLoadingNotes(false);
-    } else if (user) {
+    if (user) {
+      // User is authenticated - load their real data
       fetchNotes();
       fetchFolders();
       setupRealTimeSubscriptions();
+    } else if (isDemo) {
+      // User not authenticated but in demo mode - load demo data
+      setNotes(getDemoNotes());
+      setFolders(getDemoFolders());
+      setLoadingNotes(false);
     }
   }, [user, isDemo]);
 
@@ -150,6 +151,40 @@ export default function Dashboard() {
   };
 
   const handleCreateNote = async () => {
+    if (user) {
+      // User is authenticated - create real note
+      try {
+        const { data, error } = await supabase
+          .from('notes')
+          .insert([
+            {
+              user_id: user.id,
+              title: 'Untitled',
+              content: '',
+            }
+          ])
+          .select()
+          .single();
+
+        if (error) {
+          toast({
+            title: "Error creating note",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Note created",
+            description: "A new note has been created.",
+          });
+          navigate(`/editor/${data.id}`);
+        }
+      } catch (error) {
+        console.error('Error creating note:', error);
+      }
+      return;
+    }
+
     if (isDemo) {
       // Create demo note
       const newNote: Note = {
@@ -175,41 +210,30 @@ export default function Dashboard() {
       navigate(`/editor/${newNote.id}`);
       return;
     }
-
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('notes')
-        .insert([
-          {
-            user_id: user.id,
-            title: 'Untitled',
-            content: '',
-          }
-        ])
-        .select()
-        .single();
-
-      if (error) {
-        toast({
-          title: "Error creating note",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Note created",
-          description: "A new note has been created.",
-        });
-        navigate(`/editor/${data.id}`);
-      }
-    } catch (error) {
-      console.error('Error creating note:', error);
-    }
   };
 
   const handleToggleStar = async (noteId: string, currentStarred: boolean) => {
+    if (user) {
+      // User is authenticated - update real note
+      try {
+        const { error } = await supabase
+          .from('notes')
+          .update({ is_starred: !currentStarred })
+          .eq('id', noteId);
+
+        if (error) {
+          toast({
+            title: "Error updating note",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error toggling star:', error);
+      }
+      return;
+    }
+
     if (isDemo) {
       // Update demo note
       const updatedNotes = notes.map(note =>
@@ -218,23 +242,6 @@ export default function Dashboard() {
       setNotes(updatedNotes);
       saveDemoNotes(updatedNotes as any);
       return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('notes')
-        .update({ is_starred: !currentStarred })
-        .eq('id', noteId);
-
-      if (error) {
-        toast({
-          title: "Error updating note",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error toggling star:', error);
     }
   };
 
@@ -262,7 +269,7 @@ export default function Dashboard() {
   const filteredNotes = getFilteredNotes();
   const selectedFolder = selectedFolderId ? folders.find(f => f.id === selectedFolderId) : null;
 
-  if (loading && !isDemo) {
+  if (loading && !user && !isDemo) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
