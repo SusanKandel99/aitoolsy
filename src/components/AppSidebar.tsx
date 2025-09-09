@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Brain, Star, Hash, FolderOpen, Search, Settings, LogOut, Plus, Sparkles, Tag } from 'lucide-react';
+import { Brain, Star, Hash, FolderOpen, Search, Settings, LogOut, Plus, Sparkles, Tag, ChevronDown, ChevronRight } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -53,6 +53,8 @@ export function AppSidebar() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [foldersExpanded, setFoldersExpanded] = useState(true);
+  const [tagsExpanded, setTagsExpanded] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -184,6 +186,9 @@ export function AppSidebar() {
   const getNotesWithTag = (tag: string) =>
     notes.filter(note => note.tags?.includes(tag));
 
+  const getUnfiledNotes = () => 
+    notes.filter(note => !note.folder_id);
+
   return (
     <Sidebar className={collapsed ? 'w-14' : 'w-64'}>
       <SidebarHeader className="p-4">
@@ -252,75 +257,118 @@ export function AppSidebar() {
         {/* Dynamic Folders */}
         {!collapsed && (
           <SidebarGroup>
-            <SidebarGroupLabel>Folders</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {folders.filter(folder => getNotesInFolder(folder.id).length > 0).map((folder) => {
-                  const folderNotes = getNotesInFolder(folder.id);
-                  return (
-                    <SidebarMenuItem key={folder.id}>
+            <SidebarGroupLabel asChild>
+              <button
+                onClick={() => setFoldersExpanded(!foldersExpanded)}
+                className="flex items-center gap-1 w-full text-left hover:text-sidebar-accent-foreground/80 transition-colors"
+              >
+                <FolderOpen className="w-4 h-4" />
+                <span>Folders</span>
+                {foldersExpanded ? (
+                  <ChevronDown className="w-4 h-4 ml-auto" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 ml-auto" />
+                )}
+              </button>
+            </SidebarGroupLabel>
+            {foldersExpanded && (
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {/* Unfiled Notes */}
+                  {getUnfiledNotes().length > 0 && (
+                    <SidebarMenuItem>
                       <SidebarMenuButton asChild>
                         <NavLink 
-                          to={`/?folder=${folder.id}`} 
-                          className="flex items-center justify-between w-full"
+                          to="/?folder=unfiled"
+                          className="flex items-center justify-between w-full pl-6"
                         >
                           <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: folder.color }}
-                            />
-                            <FolderOpen className="w-4 h-4" />
-                            <span className="truncate text-sm">{folder.name}</span>
+                            <FolderOpen className="w-4 h-4 opacity-60" />
+                            <span className="text-sm">Unfiled</span>
                           </div>
-                          <Badge variant="secondary" className="text-xs h-5">
-                            {folderNotes.length}
-                          </Badge>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">{getUnfiledNotes().length}</span>
+                            <ChevronDown className="w-3 h-3 opacity-60" />
+                          </div>
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
+                  )}
+                  
+                  {/* Regular Folders */}
+                  {folders.filter(folder => getNotesInFolder(folder.id).length > 0).map((folder) => {
+                    const folderNotes = getNotesInFolder(folder.id);
+                    return (
+                      <SidebarMenuItem key={folder.id}>
+                        <SidebarMenuButton asChild>
+                          <NavLink 
+                            to={`/?folder=${folder.id}`} 
+                            className="flex items-center justify-between w-full pl-6"
+                          >
+                            <div className="flex items-center gap-2">
+                              <FolderOpen className="w-4 h-4" />
+                              <span className="text-sm">{folder.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
+                              <ChevronDown className="w-3 h-3 opacity-60" />
+                            </div>
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            )}
           </SidebarGroup>
         )}
 
         {/* Dynamic Tags */}
         {!collapsed && allTags.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Tags</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {allTags.slice(0, 8).map((tag) => {
-                  const taggedNotes = getNotesWithTag(tag);
-                  return (
-                    <SidebarMenuItem key={tag}>
-                      <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={`/?tag=${tag}`} 
-                          className="flex items-center justify-between w-full"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Tag className="w-4 h-4" />
-                            <span className="truncate text-sm">{tag}</span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs h-5">
-                            {taggedNotes.length}
-                          </Badge>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-                {allTags.length > 8 && (
-                  <SidebarMenuItem>
-                    <div className="px-2 py-1 text-xs text-muted-foreground">
-                      +{allTags.length - 8} more tags
-                    </div>
-                  </SidebarMenuItem>
+            <SidebarGroupLabel asChild>
+              <button
+                onClick={() => setTagsExpanded(!tagsExpanded)}
+                className="flex items-center gap-1 w-full text-left hover:text-sidebar-accent-foreground/80 transition-colors"
+              >
+                <Hash className="w-4 h-4" />
+                <span>Tags</span>
+                {tagsExpanded ? (
+                  <ChevronDown className="w-4 h-4 ml-auto" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 ml-auto" />
                 )}
-              </SidebarMenu>
-            </SidebarGroupContent>
+              </button>
+            </SidebarGroupLabel>
+            {tagsExpanded && (
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {allTags.slice(0, 8).map((tag) => {
+                    const taggedNotes = getNotesWithTag(tag);
+                    return (
+                      <SidebarMenuItem key={tag}>
+                        <SidebarMenuButton asChild>
+                          <NavLink 
+                            to={`/?tag=${tag}`} 
+                            className="flex items-center justify-between w-full pl-6"
+                          >
+                            <span className="text-sm">{tag}</span>
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                  {allTags.length > 8 && (
+                    <SidebarMenuItem>
+                      <div className="px-6 py-1 text-xs text-muted-foreground">
+                        +{allTags.length - 8} more
+                      </div>
+                    </SidebarMenuItem>
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            )}
           </SidebarGroup>
         )}
       </SidebarContent>

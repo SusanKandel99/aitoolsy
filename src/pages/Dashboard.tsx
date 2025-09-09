@@ -256,7 +256,11 @@ export default function Dashboard() {
     );
 
     if (selectedFolderId) {
-      filtered = filtered.filter(note => note.folder_id === selectedFolderId);
+      if (selectedFolderId === 'unfiled') {
+        filtered = filtered.filter(note => !note.folder_id);
+      } else {
+        filtered = filtered.filter(note => note.folder_id === selectedFolderId);
+      }
     }
 
     if (selectedTag) {
@@ -267,7 +271,9 @@ export default function Dashboard() {
   };
 
   const filteredNotes = getFilteredNotes();
-  const selectedFolder = selectedFolderId ? folders.find(f => f.id === selectedFolderId) : null;
+  const selectedFolder = selectedFolderId && selectedFolderId !== 'unfiled' 
+    ? folders.find(f => f.id === selectedFolderId) 
+    : null;
 
   if (loading && !user && !isDemo) {
     return (
@@ -294,7 +300,7 @@ export default function Dashboard() {
             <p className="text-muted-foreground">
               {filteredNotes.length} of {notes.length} {notes.length === 1 ? 'note' : 'notes'}
             </p>
-            {(selectedFolder || selectedTag) && (
+            {(selectedFolder || selectedTag || selectedFolderId === 'unfiled') && (
               <div className="flex items-center gap-2 mt-2">
                 {selectedFolder && (
                   <Badge variant="secondary" className="flex items-center gap-1">
@@ -303,6 +309,19 @@ export default function Dashboard() {
                       style={{ backgroundColor: selectedFolder.color }}
                     />
                     {selectedFolder.name}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilter}
+                      className="h-4 w-4 p-0 ml-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {selectedFolderId === 'unfiled' && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    Unfiled
                     <Button
                       variant="ghost"
                       size="sm"
