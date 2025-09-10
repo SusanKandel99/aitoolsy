@@ -288,7 +288,7 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {/* Regular Folders */}
-                  {folders.filter(folder => getNotesInFolder(folder.id).length > 0).map((folder) => {
+                  {folders.map((folder) => {
                     const folderNotes = getNotesInFolder(folder.id);
                     const isExpanded = expandedFolders.has(folder.id);
                     return (
@@ -305,10 +305,12 @@ export function AppSidebar() {
                               </div>
                               <div className="flex items-center gap-1">
                                 <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
-                                {isExpanded ? (
-                                  <ChevronDown className="w-3 h-3 opacity-60" />
-                                ) : (
-                                  <ChevronRight className="w-3 h-3 opacity-60" />
+                                {folderNotes.length > 0 && (
+                                  isExpanded ? (
+                                    <ChevronDown className="w-3 h-3 opacity-60" />
+                                  ) : (
+                                    <ChevronRight className="w-3 h-3 opacity-60" />
+                                  )
                                 )}
                               </div>
                             </button>
