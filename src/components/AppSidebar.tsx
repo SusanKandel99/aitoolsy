@@ -93,6 +93,8 @@ export function AppSidebar() {
   };
 
   const setupRealTimeSubscriptions = () => {
+    console.log('Setting up sidebar real-time subscriptions...');
+    
     // Use optimized channel names to avoid conflicts
     const notesChannel = supabase
       .channel('sidebar-notes-realtime')
@@ -104,6 +106,8 @@ export function AppSidebar() {
           table: 'notes'
         },
         (payload) => {
+          console.log('Sidebar received note update:', payload.eventType, payload);
+          
           if (payload.eventType === 'INSERT') {
             const newNote = payload.new as Note;
             setNotes(prev => {
@@ -159,12 +163,18 @@ export function AppSidebar() {
           table: 'folders'
         },
         (payload) => {
+          console.log('Sidebar received folder update:', payload.eventType, payload);
+          
           if (payload.eventType === 'INSERT') {
             const newFolder = payload.new as Folder;
             setFolders(prev => {
               // Check if folder already exists to prevent duplicates
               const exists = prev.some(folder => folder.id === newFolder.id);
-              if (exists) return prev;
+              if (exists) {
+                console.log('Sidebar: Folder already exists, skipping duplicate');
+                return prev;
+              }
+              console.log('Sidebar: Adding new folder:', newFolder.name);
               return [...prev, newFolder].sort((a, b) => a.name.localeCompare(b.name));
             });
           } else if (payload.eventType === 'UPDATE') {
@@ -180,6 +190,7 @@ export function AppSidebar() {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up sidebar subscriptions...');
       supabase.removeChannel(notesChannel);
       supabase.removeChannel(foldersChannel);
     };

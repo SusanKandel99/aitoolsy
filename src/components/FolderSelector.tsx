@@ -38,7 +38,53 @@ export function FolderSelector({ selectedFolderId, onFolderChange }: FolderSelec
 
   useEffect(() => {
     fetchFolders();
+    const cleanup = setupRealTimeSubscriptions();
+    return cleanup;
   }, []);
+
+  const setupRealTimeSubscriptions = () => {
+    console.log('Setting up FolderSelector real-time subscriptions...');
+    
+    const foldersChannel = supabase
+      .channel('folder-selector-folders-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'folders'
+        },
+        (payload) => {
+          console.log('FolderSelector received folder update:', payload.eventType, payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newFolder = payload.new as Folder;
+            setFolders(prev => {
+              const exists = prev.some(folder => folder.id === newFolder.id);
+              if (exists) {
+                console.log('Folder already exists, skipping duplicate');
+                return prev;
+              }
+              console.log('Adding new folder to FolderSelector:', newFolder.name);
+              return [...prev, newFolder].sort((a, b) => a.name.localeCompare(b.name));
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedFolder = payload.new as Folder;
+            setFolders(prev => prev.map(folder => 
+              folder.id === updatedFolder.id ? updatedFolder : folder
+            ).sort((a, b) => a.name.localeCompare(b.name)));
+          } else if (payload.eventType === 'DELETE') {
+            setFolders(prev => prev.filter(folder => folder.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up FolderSelector subscriptions...');
+      supabase.removeChannel(foldersChannel);
+    };
+  };
 
   const fetchFolders = async () => {
     try {

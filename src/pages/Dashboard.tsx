@@ -108,6 +108,8 @@ export default function Dashboard() {
           table: 'notes'
         },
         (payload) => {
+          console.log('Dashboard received note update:', payload.eventType, payload);
+          
           // Immediate state updates using functional updates for better performance
           if (payload.eventType === 'INSERT') {
             const newNote = payload.new as Note;
@@ -139,12 +141,18 @@ export default function Dashboard() {
           table: 'folders'
         },
         (payload) => {
+          console.log('Dashboard received folder update:', payload.eventType, payload);
+          
           if (payload.eventType === 'INSERT') {
             const newFolder = payload.new as Folder;
             setFolders(prev => {
               // Check if folder already exists to prevent duplicates
               const exists = prev.some(folder => folder.id === newFolder.id);
-              if (exists) return prev;
+              if (exists) {
+                console.log('Dashboard: Folder already exists, skipping duplicate');
+                return prev;
+              }
+              console.log('Dashboard: Adding new folder:', newFolder.name);
               return [...prev, newFolder].sort((a, b) => a.name.localeCompare(b.name));
             });
           } else if (payload.eventType === 'UPDATE') {
@@ -160,6 +168,7 @@ export default function Dashboard() {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up dashboard subscriptions...');
       supabase.removeChannel(notesChannel);
       supabase.removeChannel(foldersChannel);
     };
