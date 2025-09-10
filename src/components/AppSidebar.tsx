@@ -55,6 +55,7 @@ export function AppSidebar() {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [tagsExpanded, setTagsExpanded] = useState(true);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -189,6 +190,18 @@ export function AppSidebar() {
   const getUnfiledNotes = () => 
     notes.filter(note => !note.folder_id);
 
+  const toggleFolderExpansion = (folderId: string) => {
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderId)) {
+        newSet.delete(folderId);
+      } else {
+        newSet.add(folderId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <Sidebar className={collapsed ? 'w-14' : 'w-64'}>
       <SidebarHeader className="p-4">
@@ -274,48 +287,47 @@ export function AppSidebar() {
             {foldersExpanded && (
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {/* Unfiled Notes */}
-                  {getUnfiledNotes().length > 0 && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <NavLink 
-                          to="/?folder=unfiled"
-                          className="flex items-center justify-between w-full pl-6"
-                        >
-                          <div className="flex items-center gap-2">
-                            <FolderOpen className="w-4 h-4 opacity-60" />
-                            <span className="text-sm">Unfiled</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground">{getUnfiledNotes().length}</span>
-                            <ChevronDown className="w-3 h-3 opacity-60" />
-                          </div>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  
                   {/* Regular Folders */}
                   {folders.filter(folder => getNotesInFolder(folder.id).length > 0).map((folder) => {
                     const folderNotes = getNotesInFolder(folder.id);
+                    const isExpanded = expandedFolders.has(folder.id);
                     return (
-                      <SidebarMenuItem key={folder.id}>
-                        <SidebarMenuButton asChild>
-                          <NavLink 
-                            to={`/?folder=${folder.id}`} 
-                            className="flex items-center justify-between w-full pl-6"
-                          >
-                            <div className="flex items-center gap-2">
-                              <FolderOpen className="w-4 h-4" />
-                              <span className="text-sm">{folder.name}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
-                              <ChevronDown className="w-3 h-3 opacity-60" />
-                            </div>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
+                      <div key={folder.id}>
+                        <SidebarMenuItem>
+                          <SidebarMenuButton asChild>
+                            <button
+                              onClick={() => toggleFolderExpansion(folder.id)}
+                              className="flex items-center justify-between w-full pl-6 hover:bg-sidebar-accent/50"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FolderOpen className="w-4 h-4" />
+                                <span className="text-sm">{folder.name}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">{folderNotes.length}</span>
+                                {isExpanded ? (
+                                  <ChevronDown className="w-3 h-3 opacity-60" />
+                                ) : (
+                                  <ChevronRight className="w-3 h-3 opacity-60" />
+                                )}
+                              </div>
+                            </button>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        {/* Notes in folder */}
+                        {isExpanded && folderNotes.map((note) => (
+                          <SidebarMenuItem key={note.id}>
+                            <SidebarMenuButton asChild>
+                              <NavLink 
+                                to={`/editor?id=${note.id}`}
+                                className="flex items-center gap-2 w-full pl-12 text-xs hover:bg-sidebar-accent/30"
+                              >
+                                <span className="truncate">{note.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </div>
                     );
                   })}
                 </SidebarMenu>
