@@ -319,7 +319,7 @@ export function AppSidebar() {
                           <SidebarMenuItem key={note.id}>
                             <SidebarMenuButton asChild>
                               <NavLink 
-                                to={`/editor?id=${note.id}`}
+                                to={`/editor/${note.id}`}
                                 className="flex items-center gap-2 w-full pl-12 text-xs hover:bg-sidebar-accent/30"
                               >
                                 <span className="truncate">{note.title}</span>
