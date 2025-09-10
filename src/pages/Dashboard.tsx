@@ -51,7 +51,8 @@ export default function Dashboard() {
       // User is authenticated - load their real data
       fetchNotes();
       fetchFolders();
-      setupRealTimeSubscriptions();
+      const cleanup = setupRealTimeSubscriptions();
+      return cleanup;
     } else if (isDemo) {
       // User not authenticated but in demo mode - load demo data
       setNotes(getDemoNotes());
@@ -96,9 +97,9 @@ export default function Dashboard() {
   };
 
   const setupRealTimeSubscriptions = () => {
-    // Notes real-time subscription
+    // Use shared channel names to avoid conflicts with sidebar
     const notesChannel = supabase
-      .channel('notes-changes')
+      .channel('dashboard-notes-realtime')
       .on(
         'postgres_changes',
         {
@@ -107,11 +108,18 @@ export default function Dashboard() {
           table: 'notes'
         },
         (payload) => {
+          // Immediate state updates using functional updates for better performance
           if (payload.eventType === 'INSERT') {
-            setNotes(prev => [payload.new as Note, ...prev]);
+            const newNote = payload.new as Note;
+            setNotes(prev => {
+              // Check if note already exists to prevent duplicates
+              const exists = prev.some(note => note.id === newNote.id);
+              return exists ? prev : [newNote, ...prev];
+            });
           } else if (payload.eventType === 'UPDATE') {
+            const updatedNote = payload.new as Note;
             setNotes(prev => prev.map(note => 
-              note.id === payload.new.id ? payload.new as Note : note
+              note.id === updatedNote.id ? updatedNote : note
             ));
           } else if (payload.eventType === 'DELETE') {
             setNotes(prev => prev.filter(note => note.id !== payload.old.id));
@@ -120,9 +128,9 @@ export default function Dashboard() {
       )
       .subscribe();
 
-    // Folders real-time subscription
+    // Folders real-time subscription with optimized updates
     const foldersChannel = supabase
-      .channel('folders-changes')
+      .channel('dashboard-folders-realtime')
       .on(
         'postgres_changes',
         {
@@ -132,10 +140,17 @@ export default function Dashboard() {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setFolders(prev => [...prev, payload.new as Folder].sort((a, b) => a.name.localeCompare(b.name)));
+            const newFolder = payload.new as Folder;
+            setFolders(prev => {
+              // Check if folder already exists to prevent duplicates
+              const exists = prev.some(folder => folder.id === newFolder.id);
+              if (exists) return prev;
+              return [...prev, newFolder].sort((a, b) => a.name.localeCompare(b.name));
+            });
           } else if (payload.eventType === 'UPDATE') {
+            const updatedFolder = payload.new as Folder;
             setFolders(prev => prev.map(folder => 
-              folder.id === payload.new.id ? payload.new as Folder : folder
+              folder.id === updatedFolder.id ? updatedFolder : folder
             ).sort((a, b) => a.name.localeCompare(b.name)));
           } else if (payload.eventType === 'DELETE') {
             setFolders(prev => prev.filter(folder => folder.id !== payload.old.id));

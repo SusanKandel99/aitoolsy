@@ -93,9 +93,9 @@ export function AppSidebar() {
   };
 
   const setupRealTimeSubscriptions = () => {
-    // Notes real-time subscription
+    // Use optimized channel names to avoid conflicts
     const notesChannel = supabase
-      .channel('sidebar-notes-changes')
+      .channel('sidebar-notes-realtime')
       .on(
         'postgres_changes',
         {
@@ -106,7 +106,11 @@ export function AppSidebar() {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newNote = payload.new as Note;
-            setNotes(prev => [newNote, ...prev]);
+            setNotes(prev => {
+              // Check if note already exists to prevent duplicates
+              const exists = prev.some(note => note.id === newNote.id);
+              return exists ? prev : [newNote, ...prev];
+            });
             // Update tags if note has tags
             if (newNote.tags?.length) {
               setAllTags(prev => {
@@ -116,14 +120,11 @@ export function AppSidebar() {
             }
           } else if (payload.eventType === 'UPDATE') {
             const updatedNote = payload.new as Note;
-            setNotes(prev => prev.map(note => 
-              note.id === updatedNote.id ? updatedNote : note
-            ));
-            // Recalculate tags
-            setNotes(currentNotes => {
-              const updated = currentNotes.map(note => 
+            setNotes(prev => {
+              const updated = prev.map(note => 
                 note.id === updatedNote.id ? updatedNote : note
               );
+              // Recalculate tags immediately
               const tagsSet = new Set<string>();
               updated.forEach(note => {
                 (note.tags || []).forEach(tag => tagsSet.add(tag));
@@ -134,7 +135,7 @@ export function AppSidebar() {
           } else if (payload.eventType === 'DELETE') {
             setNotes(prev => {
               const filtered = prev.filter(note => note.id !== payload.old.id);
-              // Recalculate tags
+              // Recalculate tags immediately
               const tagsSet = new Set<string>();
               filtered.forEach(note => {
                 (note.tags || []).forEach(tag => tagsSet.add(tag));
@@ -147,9 +148,9 @@ export function AppSidebar() {
       )
       .subscribe();
 
-    // Folders real-time subscription
+    // Folders real-time subscription with immediate sorting
     const foldersChannel = supabase
-      .channel('sidebar-folders-changes')
+      .channel('sidebar-folders-realtime')
       .on(
         'postgres_changes',
         {
@@ -159,10 +160,17 @@ export function AppSidebar() {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setFolders(prev => [...prev, payload.new as Folder].sort((a, b) => a.name.localeCompare(b.name)));
+            const newFolder = payload.new as Folder;
+            setFolders(prev => {
+              // Check if folder already exists to prevent duplicates
+              const exists = prev.some(folder => folder.id === newFolder.id);
+              if (exists) return prev;
+              return [...prev, newFolder].sort((a, b) => a.name.localeCompare(b.name));
+            });
           } else if (payload.eventType === 'UPDATE') {
+            const updatedFolder = payload.new as Folder;
             setFolders(prev => prev.map(folder => 
-              folder.id === payload.new.id ? payload.new as Folder : folder
+              folder.id === updatedFolder.id ? updatedFolder : folder
             ).sort((a, b) => a.name.localeCompare(b.name)));
           } else if (payload.eventType === 'DELETE') {
             setFolders(prev => prev.filter(folder => folder.id !== payload.old.id));
