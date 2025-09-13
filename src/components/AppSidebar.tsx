@@ -381,14 +381,20 @@ export function AppSidebar() {
                     const taggedNotes = getNotesWithTag(tag);
                     return (
                       <SidebarMenuItem key={tag}>
-                        <SidebarMenuButton asChild>
-                          <NavLink 
-                            to={`/?tag=${tag}`} 
-                            className="flex items-center justify-between w-full pl-6"
-                          >
-                            <span className="text-sm">{tag}</span>
-                          </NavLink>
-                        </SidebarMenuButton>
+                         <SidebarMenuButton asChild>
+                           <NavLink 
+                             to={`/?tag=${tag}`} 
+                             className="flex items-center justify-between w-full pl-6 hover:bg-sidebar-accent/50 transition-colors"
+                           >
+                             <div className="flex items-center gap-2">
+                               <Hash className="w-3 h-3 opacity-60" />
+                               <span className="text-sm">{tag}</span>
+                             </div>
+                             <Badge variant="outline" className="text-xs px-1.5 py-0 h-4 ml-2">
+                               {taggedNotes.length}
+                             </Badge>
+                           </NavLink>
+                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     );
                   })}

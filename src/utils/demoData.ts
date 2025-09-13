@@ -372,6 +372,18 @@ export const clearDemoMode = () => {
   localStorage.removeItem('demo-user');
 };
 
+export const resetDemoMode = () => {
+  clearDemoMode();
+  initializeDemoMode();
+};
+
+// Auto-reset demo mode on page refresh or when user signs out
+export const autoResetDemoMode = () => {
+  if (isDemoMode()) {
+    resetDemoMode();
+  }
+};
+
 export const isDemoMode = (): boolean => {
   return localStorage.getItem('demo-mode') === 'true';
 };

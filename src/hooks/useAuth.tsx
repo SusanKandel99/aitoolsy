@@ -66,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear demo mode when user signs out
+    clearDemoMode();
     await supabase.auth.signOut();
     window.location.href = '/';
   };

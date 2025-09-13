@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AppSidebar } from "@/components/AppSidebar";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import NoteEditor from "./pages/NoteEditor";
@@ -21,11 +23,12 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+    <ThemeProvider defaultTheme="dark" storageKey="aitoolsy-theme">
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -36,8 +39,9 @@ const App = () => (
                   <div className="flex min-h-screen w-full">
                     <AppSidebar />
                     <div className="flex-1 flex flex-col">
-                      <header className="flex items-center border-b px-4 py-2">
+                      <header className="flex items-center justify-between border-b px-4 py-2">
                         <SidebarTrigger />
+                        <ThemeToggle />
                       </header>
                       <Routes>
                         <Route path="/dashboard" element={<Dashboard />} />
@@ -56,9 +60,10 @@ const App = () => (
               } 
             />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

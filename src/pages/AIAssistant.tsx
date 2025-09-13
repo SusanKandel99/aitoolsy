@@ -34,7 +34,14 @@ export default function AIAssistant() {
           variant: "destructive",
         });
       } else {
-        setResponse(data.result);
+        // Clean up the AI response by removing HTML tags and code blocks
+        const cleanResponse = data.result
+          .replace(/<\/?(?:p|div|h[1-6]|ul|ol|li|br|strong|em|b|i)[^>]*>/gi, '') // Remove HTML tags
+          .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+          .replace(/`([^`]*)`/g, '$1') // Remove inline code formatting
+          .replace(/\n\s*\n/g, '\n') // Remove extra blank lines
+          .trim();
+        setResponse(cleanResponse);
       }
     } catch (error) {
       console.error('Error generating content:', error);

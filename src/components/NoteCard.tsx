@@ -47,25 +47,36 @@ export function NoteCard({
 
   return (
     <Card 
-      className="hover:shadow-md transition-all duration-200 cursor-pointer group border-0 bg-card/60 backdrop-blur-sm"
+      className={`hover:shadow-md transition-all duration-200 cursor-pointer group border-0 bg-card/60 backdrop-blur-sm ${
+        isStarred ? 'ring-2 ring-yellow-400/20 bg-gradient-to-br from-yellow-50/50 to-amber-50/30 dark:from-yellow-950/20 dark:to-amber-950/10' : ''
+      }`}
       onClick={onClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <h3 className="font-semibold text-lg leading-tight group-hover:text-primary transition-colors">
+          <h3 className={`font-semibold text-lg leading-tight group-hover:text-primary transition-colors flex items-center gap-2 ${
+            isStarred ? 'text-amber-700 dark:text-amber-300' : ''
+          }`}>
+            {isStarred && <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />}
             {title || 'Untitled'}
           </h3>
           <Button
             variant="ghost"
             size="sm"
-            className="shrink-0 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            className={`shrink-0 h-8 w-8 p-0 transition-all ${
+              isStarred ? 'opacity-100 hover:bg-yellow-100 dark:hover:bg-yellow-900/20' : 'opacity-0 group-hover:opacity-100'
+            }`}
             onClick={(e) => {
               e.stopPropagation();
               onToggleStar();
             }}
           >
             <Star 
-              className={`w-4 h-4 ${isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`}
+              className={`w-4 h-4 transition-all ${
+                isStarred 
+                  ? 'fill-yellow-400 text-yellow-400 scale-110' 
+                  : 'text-muted-foreground hover:text-yellow-400'
+              }`}
             />
           </Button>
         </div>

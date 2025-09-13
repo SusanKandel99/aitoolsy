@@ -8,7 +8,7 @@ import { NoteCard } from '@/components/NoteCard';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { isDemoMode, getDemoNotes, getDemoFolders, saveDemoNotes, getDemoUser } from '@/utils/demoData';
+import { isDemoMode, getDemoNotes, getDemoFolders, saveDemoNotes, getDemoUser, autoResetDemoMode } from '@/utils/demoData';
 
 interface Note {
   id: string;
@@ -47,6 +47,9 @@ export default function Dashboard() {
   const demoUser = getDemoUser();
 
   useEffect(() => {
+    // Auto-reset demo mode on page load
+    autoResetDemoMode();
+    
     if (user) {
       // User is authenticated - load their real data
       fetchNotes();
