@@ -31,11 +31,17 @@ const aiTools = [
   { title: 'Flashcards', url: '/flashcards', icon: Sparkles },
 ];
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface Note {
   id: string;
   title: string;
   folder_id: string | null;
-  tags: string[];
+  tags?: Tag[];
 }
 
 interface Folder {
@@ -52,7 +58,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const [folders, setFolders] = useState<Folder[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [allTags, setAllTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [tagsExpanded, setTagsExpanded] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -72,21 +78,32 @@ export function AppSidebar() {
         .select('*')
         .order('name');
 
-      // Fetch notes
+      // Fetch notes with their tags
       const { data: notesData } = await supabase
         .from('notes')
-        .select('id, title, folder_id, tags')
+        .select('id, title, folder_id')
         .order('updated_at', { ascending: false });
+
+      // Fetch all tags with note counts
+      const { data: tagsData } = await supabase
+        .from('tags')
+        .select('*')
+        .order('name');
+
+      // Fetch all note_tags to calculate counts
+      const { data: noteTagsData } = await supabase
+        .from('note_tags')
+        .select('note_id, tag_id');
+
+      // Add note count to each tag
+      const tagsWithCounts = (tagsData || []).map(tag => {
+        const count = (noteTagsData || []).filter(nt => nt.tag_id === tag.id).length;
+        return { ...tag, count };
+      });
 
       setFolders(foldersData || []);
       setNotes(notesData || []);
-
-      // Extract unique tags
-      const tagsSet = new Set<string>();
-      (notesData || []).forEach(note => {
-        (note.tags || []).forEach(tag => tagsSet.add(tag));
-      });
-      setAllTags(Array.from(tagsSet).sort());
+      setAllTags(tagsWithCounts);
     } catch (error) {
       console.error('Error fetching folders and notes:', error);
     }
@@ -95,7 +112,7 @@ export function AppSidebar() {
   const setupRealTimeSubscriptions = () => {
     console.log('Setting up sidebar real-time subscriptions...');
     
-    // Use optimized channel names to avoid conflicts
+    // Notes subscription
     const notesChannel = supabase
       .channel('sidebar-notes-realtime')
       .on(
@@ -111,48 +128,22 @@ export function AppSidebar() {
           if (payload.eventType === 'INSERT') {
             const newNote = payload.new as Note;
             setNotes(prev => {
-              // Check if note already exists to prevent duplicates
               const exists = prev.some(note => note.id === newNote.id);
               return exists ? prev : [newNote, ...prev];
             });
-            // Update tags if note has tags
-            if (newNote.tags?.length) {
-              setAllTags(prev => {
-                const newTags = new Set([...prev, ...newNote.tags]);
-                return Array.from(newTags).sort();
-              });
-            }
           } else if (payload.eventType === 'UPDATE') {
             const updatedNote = payload.new as Note;
-            setNotes(prev => {
-              const updated = prev.map(note => 
-                note.id === updatedNote.id ? updatedNote : note
-              );
-              // Recalculate tags immediately
-              const tagsSet = new Set<string>();
-              updated.forEach(note => {
-                (note.tags || []).forEach(tag => tagsSet.add(tag));
-              });
-              setAllTags(Array.from(tagsSet).sort());
-              return updated;
-            });
+            setNotes(prev => prev.map(note => 
+              note.id === updatedNote.id ? updatedNote : note
+            ));
           } else if (payload.eventType === 'DELETE') {
-            setNotes(prev => {
-              const filtered = prev.filter(note => note.id !== payload.old.id);
-              // Recalculate tags immediately
-              const tagsSet = new Set<string>();
-              filtered.forEach(note => {
-                (note.tags || []).forEach(tag => tagsSet.add(tag));
-              });
-              setAllTags(Array.from(tagsSet).sort());
-              return filtered;
-            });
+            setNotes(prev => prev.filter(note => note.id !== payload.old.id));
           }
         }
       )
       .subscribe();
 
-    // Folders real-time subscription with immediate sorting
+    // Folders subscription
     const foldersChannel = supabase
       .channel('sidebar-folders-realtime')
       .on(
@@ -168,13 +159,8 @@ export function AppSidebar() {
           if (payload.eventType === 'INSERT') {
             const newFolder = payload.new as Folder;
             setFolders(prev => {
-              // Check if folder already exists to prevent duplicates
               const exists = prev.some(folder => folder.id === newFolder.id);
-              if (exists) {
-                console.log('Sidebar: Folder already exists, skipping duplicate');
-                return prev;
-              }
-              console.log('Sidebar: Adding new folder:', newFolder.name);
+              if (exists) return prev;
               return [...prev, newFolder].sort((a, b) => a.name.localeCompare(b.name));
             });
           } else if (payload.eventType === 'UPDATE') {
@@ -189,10 +175,44 @@ export function AppSidebar() {
       )
       .subscribe();
 
+    // Tags subscription
+    const tagsChannel = supabase
+      .channel('sidebar-tags-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tags'
+        },
+        () => {
+          fetchFoldersAndNotes();
+        }
+      )
+      .subscribe();
+
+    // Note-tags junction table subscription
+    const noteTagsChannel = supabase
+      .channel('sidebar-note-tags-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'note_tags'
+        },
+        () => {
+          fetchFoldersAndNotes();
+        }
+      )
+      .subscribe();
+
     return () => {
       console.log('Cleaning up sidebar subscriptions...');
       supabase.removeChannel(notesChannel);
       supabase.removeChannel(foldersChannel);
+      supabase.removeChannel(tagsChannel);
+      supabase.removeChannel(noteTagsChannel);
     };
   };
 
@@ -202,9 +222,6 @@ export function AppSidebar() {
 
   const getNotesInFolder = (folderId: string | null) => 
     notes.filter(note => note.folder_id === folderId);
-
-  const getNotesWithTag = (tag: string) =>
-    notes.filter(note => note.tags?.includes(tag));
 
   const getUnfiledNotes = () => 
     notes.filter(note => !note.folder_id);
@@ -377,27 +394,27 @@ export function AppSidebar() {
             {tagsExpanded && (
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {allTags.slice(0, 8).map((tag) => {
-                    const taggedNotes = getNotesWithTag(tag);
-                    return (
-                      <SidebarMenuItem key={tag}>
-                         <SidebarMenuButton asChild>
-                           <NavLink 
-                             to={`/?tag=${tag}`} 
-                             className="flex items-center justify-between w-full pl-6 hover:bg-sidebar-accent/50 transition-colors"
-                           >
-                             <div className="flex items-center gap-2">
-                               <Hash className="w-3 h-3 opacity-60" />
-                               <span className="text-sm">{tag}</span>
-                             </div>
-                             <Badge variant="outline" className="text-xs px-1.5 py-0 h-4 ml-2">
-                               {taggedNotes.length}
-                             </Badge>
-                           </NavLink>
-                         </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
+                  {allTags.slice(0, 8).map((tag) => (
+                    <SidebarMenuItem key={tag.id}>
+                      <SidebarMenuButton asChild>
+                        <NavLink 
+                          to={`/?tag=${tag.id}`} 
+                          className="flex items-center justify-between w-full pl-6 hover:bg-sidebar-accent/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: tag.color }}
+                            />
+                            <span className="text-sm">{tag.name}</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 h-4 ml-2">
+                            {(tag as any).count || 0}
+                          </Badge>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
                   {allTags.length > 8 && (
                     <SidebarMenuItem>
                       <div className="px-6 py-1 text-xs text-muted-foreground">

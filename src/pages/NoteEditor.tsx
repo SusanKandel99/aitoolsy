@@ -31,7 +31,6 @@ interface Note {
   content: string;
   is_starred: boolean;
   folder_id: string | null;
-  tags: string[];
   created_at: string;
   updated_at: string;
 }
@@ -45,7 +44,7 @@ export default function NoteEditor() {
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [folderId, setFolderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -96,7 +95,7 @@ export default function NoteEditor() {
         setIsLoading(false);
         setTitle('Untitled');
         setContent('');
-        setTags([]);
+        setTagIds([]);
         setFolderId(null);
       }
     } else if (isDemo) {
@@ -104,10 +103,10 @@ export default function NoteEditor() {
         const demoNotes = getDemoNotes();
         const demoNote = demoNotes.find(n => n.id === noteId);
         if (demoNote) {
-          setNote(demoNote);
+          setNote({ ...demoNote, created_at: demoNote.created_at, updated_at: demoNote.updated_at });
           setTitle(demoNote.title);
           setContent(demoNote.content || '');
-          setTags(demoNote.tags || []);
+          setTagIds([]);
           setFolderId(demoNote.folder_id);
         } else {
           navigate('/dashboard');
@@ -117,7 +116,7 @@ export default function NoteEditor() {
         // New note in demo mode
         setTitle('Untitled');
         setContent('');
-        setTags([]);
+        setTagIds([]);
         setFolderId(null);
       }
       setIsLoading(false);
@@ -128,12 +127,11 @@ export default function NoteEditor() {
     if (note) {
       const titleChanged = title !== note.title;
       const contentChanged = content !== note.content;
-      const tagsChanged = JSON.stringify(tags) !== JSON.stringify(note.tags || []);
       const folderChanged = folderId !== note.folder_id;
-      setHasUnsavedChanges(titleChanged || contentChanged || tagsChanged || folderChanged);
+      setHasUnsavedChanges(titleChanged || contentChanged || folderChanged);
       
       // Auto-save after changes (only if enabled in preferences)
-      if (preferences.autoSaveEnabled && (titleChanged || contentChanged || tagsChanged || folderChanged)) {
+      if (preferences.autoSaveEnabled && (titleChanged || contentChanged || folderChanged)) {
         if (autoSaveTimeout) {
           clearTimeout(autoSaveTimeout);
         }
@@ -147,7 +145,7 @@ export default function NoteEditor() {
       }
     } else if (!noteId) {
       // Auto-save new notes with content (only if enabled in preferences)
-      const hasContent = title.trim() !== '' || content.trim() !== '' || tags.length > 0 || folderId !== null;
+      const hasContent = title.trim() !== '' || content.trim() !== '' || tagIds.length > 0 || folderId !== null;
       setHasUnsavedChanges(hasContent);
       
       if (preferences.autoSaveEnabled && hasContent) {
@@ -163,7 +161,7 @@ export default function NoteEditor() {
         setAutoSaveTimeout(timeout);
       }
     }
-  }, [title, content, tags, folderId, note, preferences]);
+  }, [title, content, tagIds, folderId, note, preferences]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -195,8 +193,17 @@ export default function NoteEditor() {
       setNote(data);
       setTitle(data.title);
       setContent(data.content || '');
-      setTags(data.tags || []);
       setFolderId(data.folder_id);
+
+      // Fetch note tags from junction table
+      const { data: noteTagsData } = await supabase
+        .from('note_tags')
+        .select('tag_id')
+        .eq('note_id', noteId);
+
+      if (noteTagsData) {
+        setTagIds(noteTagsData.map((nt: any) => nt.tag_id));
+      }
     } catch (error) {
       console.error('Error fetching note:', error);
       toast({
@@ -223,17 +230,18 @@ export default function NoteEditor() {
             .update({ 
               title: title.trim() || 'Untitled', 
               content,
-              tags,
               folder_id: folderId,
               updated_at: new Date().toISOString()
             })
             .eq('id', noteId);
 
+          // Update tags in junction table
+          await syncNoteTags(noteId, tagIds);
+
           setNote({
             ...note,
             title: title.trim() || 'Untitled',
             content,
-            tags,
             folder_id: folderId,
             updated_at: new Date().toISOString()
           });
@@ -253,7 +261,6 @@ export default function NoteEditor() {
                   ...n,
                   title: title.trim() || 'Untitled',
                   content,
-                  tags,
                   folder_id: folderId,
                   updated_at: new Date().toISOString()
                 }
@@ -264,7 +271,6 @@ export default function NoteEditor() {
             ...note,
             title: title.trim() || 'Untitled',
             content,
-            tags,
             folder_id: folderId,
             updated_at: new Date().toISOString()
           });
@@ -274,6 +280,26 @@ export default function NoteEditor() {
       }
     } catch (error) {
       console.error('Auto-save failed:', error);
+    }
+  };
+
+  const syncNoteTags = async (noteId: string, tagIds: string[]) => {
+    // Delete all existing note-tag relationships
+    await supabase
+      .from('note_tags')
+      .delete()
+      .eq('note_id', noteId);
+
+    // Insert new relationships
+    if (tagIds.length > 0) {
+      const noteTagsData = tagIds.map(tagId => ({
+        note_id: noteId,
+        tag_id: tagId
+      }));
+
+      await supabase
+        .from('note_tags')
+        .insert(noteTagsData);
     }
   };
 
@@ -289,13 +315,15 @@ export default function NoteEditor() {
             user_id: user.id,
             title: title.trim() || 'Untitled',
             content,
-            tags,
             folder_id: folderId,
           }])
           .select()
           .single();
 
         if (error) throw error;
+
+        // Sync tags
+        await syncNoteTags(data.id, tagIds);
 
         // Navigate to the new note
         navigate(`/editor/${data.id}`, { replace: true });
@@ -311,7 +339,7 @@ export default function NoteEditor() {
           user_id: demoUser?.id || 'demo-user',
           title: title.trim() || 'Untitled',
           content,
-          tags,
+          tags: [],
           folder_id: folderId,
           is_starred: false,
           created_at: new Date().toISOString(),
@@ -324,7 +352,7 @@ export default function NoteEditor() {
         
         // Navigate to the new note
         navigate(`/editor/${newNote.id}`, { replace: true });
-        setNote(newNote);
+        setNote({ ...newNote, created_at: newNote.created_at, updated_at: newNote.updated_at });
         setHasUnsavedChanges(false);
         return;
       }
@@ -345,7 +373,6 @@ export default function NoteEditor() {
             .update({ 
               title: title.trim() || 'Untitled', 
               content,
-              tags,
               folder_id: folderId,
               updated_at: new Date().toISOString()
             })
@@ -353,14 +380,16 @@ export default function NoteEditor() {
 
           if (error) throw error;
 
-            setNote({
-              ...note,
-              title: title.trim() || 'Untitled',
-              content,
-              tags,
-              folder_id: folderId,
-              updated_at: new Date().toISOString()
-            });
+          // Sync tags
+          await syncNoteTags(noteId, tagIds);
+
+          setNote({
+            ...note,
+            title: title.trim() || 'Untitled',
+            content,
+            folder_id: folderId,
+            updated_at: new Date().toISOString()
+          });
         } else {
           const { data, error } = await (supabase as any)
             .from('notes')
@@ -368,13 +397,15 @@ export default function NoteEditor() {
               user_id: user.id,
               title: title.trim() || 'Untitled',
               content,
-              tags,
               folder_id: folderId,
             }])
             .select()
             .single();
 
           if (error) throw error;
+
+          // Sync tags
+          await syncNoteTags(data.id, tagIds);
 
           // Navigate to the new note
           navigate(`/editor/${data.id}`, { replace: true });
@@ -399,7 +430,6 @@ export default function NoteEditor() {
                   ...n,
                   title: title.trim() || 'Untitled',
                   content,
-                  tags,
                   folder_id: folderId,
                   updated_at: new Date().toISOString()
                 }
@@ -410,7 +440,6 @@ export default function NoteEditor() {
             ...note,
             title: title.trim() || 'Untitled',
             content,
-            tags,
             folder_id: folderId,
             updated_at: new Date().toISOString()
           });
@@ -421,7 +450,7 @@ export default function NoteEditor() {
             user_id: demoUser?.id || 'demo-user',
             title: title.trim() || 'Untitled',
             content,
-            tags,
+            tags: [],
             folder_id: folderId,
             is_starred: false,
             created_at: new Date().toISOString(),
@@ -434,7 +463,7 @@ export default function NoteEditor() {
           
           // Navigate to the new note
           navigate(`/editor/${newNote.id}`, { replace: true });
-          setNote(newNote);
+          setNote({ ...newNote, created_at: newNote.created_at, updated_at: newNote.updated_at });
         }
         
         setHasUnsavedChanges(false);
@@ -506,7 +535,6 @@ export default function NoteEditor() {
   const handleHistoryRestore = (historyEntry: any) => {
     setTitle(historyEntry.title);
     setContent(historyEntry.content || '');
-    setTags(historyEntry.tags || []);
     setFolderId(historyEntry.folder_id);
     setHasUnsavedChanges(true);
   };
@@ -672,8 +700,8 @@ export default function NoteEditor() {
               onFolderChange={setFolderId}
             />
             <TagManager
-              tags={tags}
-              onTagsChange={setTags}
+              selectedTagIds={tagIds}
+              onTagsChange={setTagIds}
             />
           </div>
 

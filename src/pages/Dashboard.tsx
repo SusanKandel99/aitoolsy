@@ -10,6 +10,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { isDemoMode, getDemoNotes, getDemoFolders, saveDemoNotes, getDemoUser, autoResetDemoMode } from '@/utils/demoData';
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface Note {
   id: string;
   title: string;
@@ -18,7 +24,7 @@ interface Note {
   updated_at: string;
   created_at: string;
   folder_id: string | null;
-  tags: string[];
+  tags?: Tag[];
   user_id?: string;
 }
 
@@ -58,7 +64,11 @@ export default function Dashboard() {
       return cleanup;
     } else if (isDemo) {
       // User not authenticated but in demo mode - load demo data
-      setNotes(getDemoNotes());
+      const demoNotes = getDemoNotes().map(note => ({
+        ...note,
+        tags: [] as Tag[]
+      }));
+      setNotes(demoNotes);
       setFolders(getDemoFolders());
       setLoadingNotes(false);
     }
@@ -66,7 +76,7 @@ export default function Dashboard() {
 
   const fetchNotes = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: notesData, error } = await supabase
         .from('notes')
         .select('*')
         .order('updated_at', { ascending: false });
@@ -77,9 +87,33 @@ export default function Dashboard() {
           description: error.message,
           variant: "destructive",
         });
-      } else {
-        setNotes(data || []);
+        return;
       }
+
+      // Fetch tags for each note
+      const notesWithTags = await Promise.all(
+        (notesData || []).map(async (note) => {
+          const { data: noteTagsData } = await supabase
+            .from('note_tags')
+            .select(`
+              tag_id,
+              tags (
+                id,
+                name,
+                color
+              )
+            `)
+            .eq('note_id', note.id);
+
+          const tags = (noteTagsData || [])
+            .map((nt: any) => nt.tags)
+            .filter(Boolean) as Tag[];
+
+          return { ...note, tags };
+        })
+      );
+
+      setNotes(notesWithTags);
     } catch (error) {
       console.error('Error fetching notes:', error);
     } finally {
@@ -221,7 +255,7 @@ export default function Dashboard() {
         content: '',
         is_starred: false,
         folder_id: null,
-        tags: [],
+        tags: [] as Tag[],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -291,7 +325,9 @@ export default function Dashboard() {
     }
 
     if (selectedTag) {
-      filtered = filtered.filter(note => note.tags?.includes(selectedTag));
+      filtered = filtered.filter(note => 
+        note.tags?.some(tag => tag.id === selectedTag)
+      );
     }
 
     return filtered;

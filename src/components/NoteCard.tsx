@@ -3,13 +3,19 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface NoteCardProps {
   id: string;
   title: string;
   content: string;
   isStarred: boolean;
   updatedAt: string;
-  tags?: string[];
+  tags?: Tag[];
   onClick: () => void;
   onToggleStar: () => void;
 }
@@ -96,12 +102,17 @@ export function NoteCard({
             <div className="flex items-center gap-1">
               {tags.slice(0, 2).map((tag) => (
                 <Badge 
-                  key={tag} 
+                  key={tag.id} 
                   variant="secondary" 
                   className="text-xs px-2 py-0 h-5"
+                  style={{ 
+                    backgroundColor: `${tag.color}20`,
+                    borderColor: tag.color,
+                    color: tag.color
+                  }}
                 >
                   <Hash className="w-2 h-2 mr-1" />
-                  {tag}
+                  {tag.name}
                 </Badge>
               ))}
               {tags.length > 2 && (
