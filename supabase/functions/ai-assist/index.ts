@@ -20,6 +20,7 @@ serve(async (req) => {
     }
 
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+    console.log('OpenRouter API key exists:', !!openRouterApiKey);
     if (!openRouterApiKey) {
       throw new Error('OpenRouter API key not configured');
     }
@@ -54,6 +55,8 @@ serve(async (req) => {
     }
 
     console.log('Sending request to OpenRouter with action:', action);
+    console.log('System prompt length:', systemPrompt.length);
+    console.log('User prompt length:', userPrompt.length);
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -64,7 +67,7 @@ serve(async (req) => {
         'X-Title': 'AIToolsy Note Editor'
       },
       body: JSON.stringify({
-        model: 'google/gemini-flash-1.5',
+        model: 'google/gemini-2.0-flash-exp:free',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
