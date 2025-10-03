@@ -19,10 +19,10 @@ serve(async (req) => {
       throw new Error('Either prompt or content is required');
     }
 
-    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-    console.log('OpenRouter API key exists:', !!openRouterApiKey);
-    if (!openRouterApiKey) {
-      throw new Error('OpenRouter API key not configured');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    console.log('Lovable API key exists:', !!lovableApiKey);
+    if (!lovableApiKey) {
+      throw new Error('Lovable API key not configured');
     }
 
     let systemPrompt = '';
@@ -54,20 +54,18 @@ serve(async (req) => {
         userPrompt = prompt || content;
     }
 
-    console.log('Sending request to OpenRouter with action:', action);
+    console.log('Sending request to Lovable AI with action:', action);
     console.log('System prompt length:', systemPrompt.length);
     console.log('User prompt length:', userPrompt.length);
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openRouterApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://aitoolsy.app',
-        'X-Title': 'AIToolsy Note Editor'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-exp',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -82,15 +80,15 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenRouter API error:', errorText);
-      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+      console.error('Lovable AI error:', errorText);
+      throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('OpenRouter response received successfully');
+    console.log('Lovable AI response received successfully');
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error('Invalid response from OpenRouter API');
+      throw new Error('Invalid response from Lovable AI');
     }
 
     let generatedText = data.choices[0].message.content;
