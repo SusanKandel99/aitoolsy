@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Brain, Send, Sparkles, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,9 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 export default function AIAssistant() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -52,6 +54,50 @@ export default function AIAssistant() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!response || !user) return;
+
+    setIsSaving(true);
+    try {
+      const noteContent = `<h3>AI Generated Content</h3><p><strong>Prompt:</strong> ${prompt}</p><p><strong>Response:</strong></p><p>${response.replace(/\n/g, '</p><p>')}</p>`;
+      
+      const { data, error } = await supabase
+        .from('notes')
+        .insert([
+          {
+            title: prompt.substring(0, 50) + (prompt.length > 50 ? '...' : ''),
+            content: noteContent,
+            user_id: user.id
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Failed to save note",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Note created!",
+          description: "Your AI-generated content has been saved as a note.",
+        });
+        navigate(`/editor?id=${data.id}`);
+      }
+    } catch (error) {
+      console.error('Error saving note:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save note",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -182,12 +228,17 @@ export default function AIAssistant() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          const noteContent = `# AI Generated Content\n\n**Prompt:** ${prompt}\n\n**Response:**\n${response}`;
-                          window.location.href = `/editor?content=${encodeURIComponent(noteContent)}`;
-                        }}
+                        onClick={handleSaveNote}
+                        disabled={isSaving}
                       >
-                        Save as Note
+                        {isSaving ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save as Note'
+                        )}
                       </Button>
                     </div>
                   </div>
