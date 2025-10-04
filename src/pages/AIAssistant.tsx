@@ -62,7 +62,15 @@ export default function AIAssistant() {
 
     setIsSaving(true);
     try {
-      const noteContent = `<h3>AI Generated Content</h3><p><strong>Prompt:</strong> ${prompt}</p><p><strong>Response:</strong></p><p>${response.replace(/\n/g, '</p><p>')}</p>`;
+      // Format content as simple HTML paragraphs
+      const formattedResponse = response.split('\n').map(line => {
+        if (line.trim()) {
+          return `<p>${line}</p>`;
+        }
+        return '';
+      }).join('');
+      
+      const noteContent = `<h3>AI Generated Content</h3><p><strong>Prompt:</strong> ${prompt}</p><hr/>${formattedResponse}`;
       
       const { data, error } = await supabase
         .from('notes')
@@ -74,20 +82,21 @@ export default function AIAssistant() {
           }
         ])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
+        console.error('Save note error:', error);
         toast({
           title: "Failed to save note",
           description: error.message,
           variant: "destructive",
         });
-      } else {
+      } else if (data) {
         toast({
           title: "Note created!",
           description: "Your AI-generated content has been saved as a note.",
         });
-        navigate(`/editor?id=${data.id}`);
+        navigate(`/editor/${data.id}`);
       }
     } catch (error) {
       console.error('Error saving note:', error);
