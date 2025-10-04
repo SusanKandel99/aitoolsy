@@ -19,9 +19,9 @@ serve(async (req) => {
       throw new Error('Content is required');
     }
 
-    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-    if (!openRouterApiKey) {
-      throw new Error('OpenRouter API key not configured');
+    const groqApiKey = Deno.env.get('GROQ_API_KEY');
+    if (!groqApiKey) {
+      throw new Error('Groq API key not configured');
     }
 
     let systemPrompt = '';
@@ -54,16 +54,14 @@ ${content}`;
 
     console.log('Generating flashcards with difficulty:', difficulty);
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openRouterApiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://aitoolsy.app',
-        'X-Title': 'AIToolsy Flashcard Generator'
+        'Authorization': `Bearer ${groqApiKey}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'google/gemini-flash-1.5',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -78,15 +76,15 @@ ${content}`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenRouter API error:', errorText);
-      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+      console.error('Groq API error:', errorText);
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('OpenRouter response received successfully');
+    console.log('Groq response received successfully');
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error('Invalid response from OpenRouter API');
+      throw new Error('Invalid response from Groq API');
     }
 
     const generatedText = data.choices[0].message.content;

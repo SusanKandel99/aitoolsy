@@ -19,10 +19,10 @@ serve(async (req) => {
       throw new Error('Either prompt or content is required');
     }
 
-    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-    console.log('OpenRouter API key exists:', !!openRouterApiKey);
-    if (!openRouterApiKey) {
-      throw new Error('OpenRouter API key not configured');
+    const groqApiKey = Deno.env.get('GROQ_API_KEY');
+    console.log('Groq API key exists:', !!groqApiKey);
+    if (!groqApiKey) {
+      throw new Error('Groq API key not configured');
     }
 
     let systemPrompt = '';
@@ -54,20 +54,18 @@ serve(async (req) => {
         userPrompt = prompt || content;
     }
 
-    console.log('Sending request to OpenRouter with action:', action);
+    console.log('Sending request to Groq with action:', action);
     console.log('System prompt length:', systemPrompt.length);
     console.log('User prompt length:', userPrompt.length);
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openRouterApiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://aitoolsy.app',
-        'X-Title': 'AIToolsy Note Editor'
+        'Authorization': `Bearer ${groqApiKey}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'google/gemini-flash-1.5',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -82,15 +80,15 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenRouter API error:', errorText);
-      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+      console.error('Groq API error:', errorText);
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('OpenRouter response received successfully');
+    console.log('Groq response received successfully');
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error('Invalid response from OpenRouter API');
+      throw new Error('Invalid response from Groq API');
     }
 
     let generatedText = data.choices[0].message.content;
