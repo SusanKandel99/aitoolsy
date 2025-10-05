@@ -593,25 +593,26 @@ export default function NoteEditor() {
     <div className="flex-1 flex flex-col h-full">
       {/* Header */}
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between p-4 sm:p-6 gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/dashboard')}
+              className="shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              <ArrowLeft className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Back</span>
             </Button>
             
             {hasUnsavedChanges && (
-              <Badge variant="secondary" className="text-xs">
-                Unsaved changes
+              <Badge variant="secondary" className="text-xs shrink-0">
+                Unsaved
               </Badge>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                 {note && (
                   <>
                     <NoteHistory 
@@ -623,6 +624,7 @@ export default function NoteEditor() {
                       variant="ghost"
                       size="sm"
                       onClick={toggleStar}
+                      className="shrink-0"
                     >
                       {note.is_starred ? (
                         <Star className="w-4 h-4 fill-current text-yellow-500" />
@@ -683,18 +685,18 @@ export default function NoteEditor() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
-        <div className="space-y-6">
+      <div className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+        <div className="space-y-4 sm:space-y-6">
           {/* Title */}
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Note title..."
-            className="text-2xl font-bold border-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="text-xl sm:text-2xl font-bold border-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
           />
 
           {/* Folder and Tags */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <FolderSelector
               selectedFolderId={folderId}
               onFolderChange={setFolderId}

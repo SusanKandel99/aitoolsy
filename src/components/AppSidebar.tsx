@@ -264,14 +264,14 @@ export function AppSidebar() {
     notes.filter(note => note.tag_ids?.includes(tagId));
 
   return (
-    <Sidebar className={collapsed ? 'w-14' : 'w-64'}>
-      <SidebarHeader className="p-4">
+    <Sidebar className={collapsed ? 'w-14' : 'w-64'} collapsible="icon">
+      <SidebarHeader className="p-3 sm:p-4">
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
               <Brain className="w-4 h-4 text-white" />
             </div>
-            <span className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               aitoolsy
             </span>
           </div>
@@ -473,7 +473,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-3 sm:p-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>

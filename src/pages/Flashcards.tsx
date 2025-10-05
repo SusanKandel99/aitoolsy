@@ -132,20 +132,20 @@ export default function Flashcards() {
   }
 
   return (
-    <div className="flex-1 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="flex-1 p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <BookOpen className="w-8 h-8" />
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8" />
               Flashcards
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               Generate AI-powered flashcards from your notes and study efficiently
             </p>
           </div>
           {flashcards.length > 0 && (
-            <Button variant="destructive" onClick={handleClearAllFlashcards}>
+            <Button variant="destructive" onClick={handleClearAllFlashcards} size="sm">
               Clear All
             </Button>
           )}

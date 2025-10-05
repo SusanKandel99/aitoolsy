@@ -139,16 +139,16 @@ export default function Search() {
     <div className="flex-1 flex flex-col h-full">
       {/* Header */}
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
-        <div className="flex items-center justify-between p-6">
+        <div className="flex items-center justify-between p-4 sm:p-6">
           <div>
-            <h1 className="text-2xl font-bold">Search Notes</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold">Search Notes</h1>
+            <p className="text-sm text-muted-foreground">
               Find your notes quickly
             </p>
           </div>
         </div>
         
-        <div className="px-6 pb-6">
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
           <div className="relative">
             <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
@@ -162,7 +162,7 @@ export default function Search() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 sm:p-6">
         {loadingNotes ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -201,7 +201,7 @@ export default function Search() {
                 Found {notes.length} {notes.length === 1 ? 'note' : 'notes'} for "{searchQuery}"
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {notes.map((note) => (
                 <NoteCard
                   key={note.id}

@@ -162,16 +162,16 @@ export default function Settings() {
   }
 
   return (
-    <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
-      <div className="space-y-6">
+    <div className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center shrink-0">
             <SettingsIcon className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Settings</h1>
-            <p className="text-muted-foreground">Manage your account and app preferences</p>
+            <h1 className="text-xl sm:text-2xl font-bold">Settings</h1>
+            <p className="text-sm text-muted-foreground">Manage your account and app preferences</p>
           </div>
         </div>
 
@@ -187,7 +187,7 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Email Address</Label>
                 <div className="flex items-center gap-2">

@@ -35,11 +35,11 @@ const App = () => (
             <Route 
               path="/*" 
               element={
-                <SidebarProvider>
+                <SidebarProvider defaultOpen={false}>
                   <div className="flex min-h-screen w-full">
                     <AppSidebar />
-                    <div className="flex-1 flex flex-col">
-                      <header className="flex items-center justify-between border-b px-4 py-2">
+                    <div className="flex-1 flex flex-col min-w-0">
+                      <header className="flex items-center justify-between border-b px-2 sm:px-4 py-2 sticky top-0 bg-background z-10">
                         <SidebarTrigger />
                         <ThemeToggle />
                       </header>

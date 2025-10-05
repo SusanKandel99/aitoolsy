@@ -58,33 +58,33 @@ const Index = () => {
           <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-glow"></div>
         </div>
         
-        <div className="container relative mx-auto px-4 py-20 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="container relative mx-auto px-4 py-12 sm:py-20 lg:py-32">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
             {/* Left side - Hero content */}
-            <div className="text-center lg:text-left space-y-10 animate-fade-in">
-              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-card backdrop-blur-sm border border-primary/20 text-primary text-sm font-semibold shadow-soft">
-                <Sparkles className="w-5 h-5 animate-glow" />
+            <div className="text-center lg:text-left space-y-6 sm:space-y-10 animate-fade-in">
+              <div className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gradient-card backdrop-blur-sm border border-primary/20 text-primary text-xs sm:text-sm font-semibold shadow-soft">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 animate-glow" />
                 AI-Powered Productivity
               </div>
               
-              <div className="space-y-8">
-                <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
+              <div className="space-y-4 sm:space-y-8">
+                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight">
                   Transform Your{' '}
                   <span className="bg-gradient-hero bg-clip-text text-transparent animate-glow">
                     Note-Taking
                   </span>
                 </h1>
                 
-                <p className="text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-2xl">
+                <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
                   Experience the future of digital note-taking with AI assistance, smart organization, 
                   and powerful collaboration tools that adapt to your workflow.
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start">
                 <Button 
                   size="lg" 
-                  className="bg-gradient-primary hover:shadow-glow text-white text-lg px-8 py-4 h-auto font-semibold transition-all duration-300 hover:scale-105 shadow-elegant"
+                  className="bg-gradient-primary hover:shadow-glow text-white text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 h-auto font-semibold transition-all duration-300 hover:scale-105 shadow-elegant"
                   onClick={() => navigate('/auth')}
                 >
                   Get Started Free
@@ -92,7 +92,7 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="text-lg px-8 py-4 h-auto font-semibold border-2 hover:bg-primary/5 transition-all duration-300 hover:scale-105"
+                  className="text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 h-auto font-semibold border-2 hover:bg-primary/5 transition-all duration-300 hover:scale-105"
                   onClick={() => {
                     // Initialize demo mode and navigate to dashboard
                     initializeDemoMode();
@@ -103,14 +103,14 @@ const Index = () => {
                 </Button>
               </div>
               
-              <div className="flex items-center gap-8 justify-center lg:justify-start">
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <div className="w-3 h-3 bg-gradient-primary rounded-full animate-glow"></div>
-                  <span className="font-medium">Free to start</span>
+              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 justify-center lg:justify-start">
+                <div className="flex items-center gap-2 sm:gap-3 text-muted-foreground">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gradient-primary rounded-full animate-glow"></div>
+                  <span className="text-sm sm:text-base font-medium">Free to start</span>
                 </div>
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <div className="w-3 h-3 bg-gradient-primary rounded-full animate-glow"></div>
-                  <span className="font-medium">No credit card required</span>
+                <div className="flex items-center gap-2 sm:gap-3 text-muted-foreground">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gradient-primary rounded-full animate-glow"></div>
+                  <span className="text-sm sm:text-base font-medium">No credit card required</span>
                 </div>
               </div>
             </div>
@@ -118,8 +118,8 @@ const Index = () => {
             {/* Right side - Visual Element */}
             <div className="flex justify-center animate-slide-up">
               <div className="relative">
-                <div className="w-80 h-80 bg-gradient-hero rounded-3xl flex items-center justify-center shadow-large animate-float">
-                  <Brain className="w-32 h-32 text-white drop-shadow-lg" />
+                <div className="w-64 h-64 sm:w-80 sm:h-80 bg-gradient-hero rounded-3xl flex items-center justify-center shadow-large animate-float">
+                  <Brain className="w-24 h-24 sm:w-32 sm:h-32 text-white drop-shadow-lg" />
                 </div>
                 <div className="absolute -inset-4 bg-gradient-primary rounded-3xl blur-xl opacity-30 animate-glow"></div>
               </div>
@@ -179,25 +179,25 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <Card 
                   key={index} 
-                  className="group p-8 border-0 bg-gradient-card backdrop-blur-sm hover:shadow-elegant transition-all duration-500 hover:scale-105 animate-slide-up"
+                  className="group p-6 sm:p-8 border-0 bg-gradient-card backdrop-blur-sm hover:shadow-elegant transition-all duration-500 hover:scale-105 animate-slide-up"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     <div className="relative">
-                      <div className="w-20 h-20 bg-gradient-primary rounded-3xl flex items-center justify-center shadow-medium group-hover:shadow-glow transition-all duration-300 animate-float">
-                        <Icon className="w-10 h-10 text-white" />
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-primary rounded-3xl flex items-center justify-center shadow-medium group-hover:shadow-glow transition-all duration-300 animate-float">
+                        <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                       </div>
                       <div className="absolute -inset-2 bg-gradient-primary rounded-3xl blur-lg opacity-20 group-hover:opacity-40 transition-all duration-300"></div>
                     </div>
-                    <div className="space-y-3">
-                      <h3 className="text-2xl font-bold group-hover:text-primary transition-colors duration-300">{feature.title}</h3>
-                      <p className="text-muted-foreground leading-relaxed text-lg">
+                    <div className="space-y-2 sm:space-y-3">
+                      <h3 className="text-xl sm:text-2xl font-bold group-hover:text-primary transition-colors duration-300">{feature.title}</h3>
+                      <p className="text-muted-foreground leading-relaxed text-base sm:text-lg">
                         {feature.description}
                       </p>
                     </div>
