@@ -230,7 +230,13 @@ export default function AIAssistant() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => navigator.clipboard.writeText(response)}
+                        onClick={() => {
+                          navigator.clipboard.writeText(response);
+                          toast({
+                            title: "Copied!",
+                            description: "Content copied to clipboard.",
+                          });
+                        }}
                       >
                         Copy to Clipboard
                       </Button>
