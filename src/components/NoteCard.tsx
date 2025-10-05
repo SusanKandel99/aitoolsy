@@ -2,6 +2,7 @@ import { Star, Clock, Hash } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface Tag {
   id: string;
@@ -29,6 +30,8 @@ export function NoteCard({
   onClick, 
   onToggleStar 
 }: NoteCardProps) {
+  const navigate = useNavigate();
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -104,11 +107,15 @@ export function NoteCard({
                 <Badge 
                   key={tag.id} 
                   variant="secondary" 
-                  className="text-xs px-2 py-0 h-5"
+                  className="text-xs px-2 py-0 h-5 cursor-pointer hover:opacity-80 transition-opacity"
                   style={{ 
                     backgroundColor: `${tag.color}20`,
                     borderColor: tag.color,
                     color: tag.color
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/dashboard?tag=${tag.id}`);
                   }}
                 >
                   <Hash className="w-2 h-2 mr-1" />

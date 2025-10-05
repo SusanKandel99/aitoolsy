@@ -337,6 +337,24 @@ export default function Dashboard() {
   const selectedFolder = selectedFolderId && selectedFolderId !== 'unfiled' 
     ? folders.find(f => f.id === selectedFolderId) 
     : null;
+  
+  // Get selected tag details
+  const [selectedTagDetails, setSelectedTagDetails] = useState<Tag | null>(null);
+  
+  useEffect(() => {
+    if (selectedTag && user) {
+      supabase
+        .from('tags')
+        .select('*')
+        .eq('id', selectedTag)
+        .single()
+        .then(({ data }) => {
+          if (data) setSelectedTagDetails(data);
+        });
+    } else {
+      setSelectedTagDetails(null);
+    }
+  }, [selectedTag, user]);
 
   if (loading && !user && !isDemo) {
     return (
@@ -395,9 +413,21 @@ export default function Dashboard() {
                     </Button>
                   </Badge>
                 )}
-                {selectedTag && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    #{selectedTag}
+                {selectedTag && selectedTagDetails && (
+                  <Badge 
+                    variant="secondary" 
+                    className="flex items-center gap-1"
+                    style={{ 
+                      backgroundColor: `${selectedTagDetails.color}20`,
+                      borderColor: selectedTagDetails.color,
+                      color: selectedTagDetails.color
+                    }}
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: selectedTagDetails.color }}
+                    />
+                    {selectedTagDetails.name}
                     <Button
                       variant="ghost"
                       size="sm"

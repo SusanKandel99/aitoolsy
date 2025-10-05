@@ -35,13 +35,14 @@ interface Tag {
   id: string;
   name: string;
   color: string;
+  count?: number;
 }
 
 interface Note {
   id: string;
   title: string;
   folder_id: string | null;
-  tags?: Tag[];
+  tag_ids?: string[];
 }
 
 interface Folder {
@@ -62,6 +63,7 @@ export function AppSidebar() {
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [tagsExpanded, setTagsExpanded] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -78,22 +80,30 @@ export function AppSidebar() {
         .select('*')
         .order('name');
 
-      // Fetch notes with their tags
+      // Fetch notes with their tag IDs
       const { data: notesData } = await supabase
         .from('notes')
         .select('id, title, folder_id')
         .order('updated_at', { ascending: false });
+      
+      // Fetch note_tags to map notes to tags
+      const { data: noteTagsData } = await supabase
+        .from('note_tags')
+        .select('note_id, tag_id');
 
-      // Fetch all tags with note counts
+      // Map notes with their tag IDs
+      const notesWithTagIds = (notesData || []).map(note => ({
+        ...note,
+        tag_ids: (noteTagsData || [])
+          .filter(nt => nt.note_id === note.id)
+          .map(nt => nt.tag_id)
+      }));
+
+      // Fetch all tags
       const { data: tagsData } = await supabase
         .from('tags')
         .select('*')
         .order('name');
-
-      // Fetch all note_tags to calculate counts
-      const { data: noteTagsData } = await supabase
-        .from('note_tags')
-        .select('note_id, tag_id');
 
       // Add note count to each tag
       const tagsWithCounts = (tagsData || []).map(tag => {
@@ -102,7 +112,7 @@ export function AppSidebar() {
       });
 
       setFolders(foldersData || []);
-      setNotes(notesData || []);
+      setNotes(notesWithTagIds);
       setAllTags(tagsWithCounts);
     } catch (error) {
       console.error('Error fetching folders and notes:', error);
@@ -237,6 +247,21 @@ export function AppSidebar() {
       return newSet;
     });
   };
+
+  const toggleTagExpansion = (tagId: string) => {
+    setExpandedTags(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(tagId)) {
+        newSet.delete(tagId);
+      } else {
+        newSet.add(tagId);
+      }
+      return newSet;
+    });
+  };
+
+  const getNotesWithTag = (tagId: string) => 
+    notes.filter(note => note.tag_ids?.includes(tagId));
 
   return (
     <Sidebar className={collapsed ? 'w-14' : 'w-64'}>
@@ -394,34 +419,53 @@ export function AppSidebar() {
             {tagsExpanded && (
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {allTags.slice(0, 8).map((tag) => (
-                    <SidebarMenuItem key={tag.id}>
-                      <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={`/?tag=${tag.id}`} 
-                          className="flex items-center justify-between w-full pl-6 hover:bg-sidebar-accent/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-2 h-2 rounded-full" 
-                              style={{ backgroundColor: tag.color }}
-                            />
-                            <span className="text-sm">{tag.name}</span>
-                          </div>
-                          <Badge variant="outline" className="text-xs px-1.5 py-0 h-4 ml-2">
-                            {(tag as any).count || 0}
-                          </Badge>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                  {allTags.length > 8 && (
-                    <SidebarMenuItem>
-                      <div className="px-6 py-1 text-xs text-muted-foreground">
-                        +{allTags.length - 8} more
+                  {allTags.map((tag) => {
+                    const tagNotes = getNotesWithTag(tag.id);
+                    const isExpanded = expandedTags.has(tag.id);
+                    return (
+                      <div key={tag.id}>
+                        <SidebarMenuItem>
+                          <SidebarMenuButton asChild>
+                            <button
+                              onClick={() => toggleTagExpansion(tag.id)}
+                              className="flex items-center justify-between w-full pl-6 hover:bg-sidebar-accent/50"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-2 h-2 rounded-full" 
+                                  style={{ backgroundColor: tag.color }}
+                                />
+                                <span className="text-sm">{tag.name}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">{tagNotes.length}</span>
+                                {tagNotes.length > 0 && (
+                                  isExpanded ? (
+                                    <ChevronDown className="w-3 h-3 opacity-60" />
+                                  ) : (
+                                    <ChevronRight className="w-3 h-3 opacity-60" />
+                                  )
+                                )}
+                              </div>
+                            </button>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        {/* Notes with this tag */}
+                        {isExpanded && tagNotes.map((note) => (
+                          <SidebarMenuItem key={note.id}>
+                            <SidebarMenuButton asChild>
+                              <NavLink 
+                                to={`/editor/${note.id}`}
+                                className="flex items-center gap-2 w-full pl-12 text-xs hover:bg-sidebar-accent/30"
+                              >
+                                <span className="truncate">{note.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
                       </div>
-                    </SidebarMenuItem>
-                  )}
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             )}
